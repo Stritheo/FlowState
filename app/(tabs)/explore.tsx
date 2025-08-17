@@ -5,7 +5,7 @@ import { ThemedView } from '@/components/ThemedView';
 
 export default function HistoryScreen() {
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
       <ThemedView style={styles.innerContainer}>
         <EntryHistory />
       </ThemedView>

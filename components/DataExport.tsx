@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, Alert, StyleSheet, ScrollView, Switch, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
 import { exportService, ExportOptions } from '../services/exportService';
 import { Colors } from '../constants/Colors';
@@ -156,7 +155,7 @@ export function DataExport({ onClose }: DataExportProps) {
           Alert.alert('Date Selection', `Current: ${value}\nTo change dates, use the preset buttons below.`);
         }}
       >
-        <Text style={styles.dateText}>{value}</Text>
+        <Text style={[styles.dateText, { color: colors.textPrimary }]}>{value}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -253,7 +252,7 @@ export function DataExport({ onClose }: DataExportProps) {
             <View style={styles.previewContainer}>
               <ThemedText style={styles.previewTitle}>Export Preview:</ThemedText>
               <View style={styles.previewContent}>
-                <Text style={styles.previewText}>{preview}</Text>
+                <Text style={[styles.previewText, { color: colors.textPrimary }]}>{preview}</Text>
               </View>
             </View>
           )}
@@ -282,7 +281,7 @@ export function DataExport({ onClose }: DataExportProps) {
           
           {onClose && (
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -362,7 +361,6 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 16,
-    color: '#333',
   },
   presetButtons: {
     flexDirection: 'row',
@@ -437,7 +435,6 @@ const styles = StyleSheet.create({
   previewText: {
     fontSize: 12,
     fontFamily: 'monospace',
-    color: '#333',
   },
   actionButtons: {
     marginTop: 24,
@@ -472,7 +469,6 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
   },
   cancelButtonText: {
-    color: '#666',
     fontSize: 16,
     fontWeight: '500',
   },

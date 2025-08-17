@@ -1,23 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, ScrollView, Animated } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
-import { ThemedView } from './ThemedView';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { ThemedText } from './ThemedText';
 import { databaseService, DailyEntry } from '../services/database';
 import { Colors } from '../constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { calculateFlowState, isInFlowState, getFlowStateColor, getEnergyColor, getFocusColor, getActionColor } from '../utils/flowState';
+import { InfoTooltip } from './InfoTooltip';
+import { getEnergyScaleGuidance, getFocusScaleGuidance, getGeneralScaleGuidance } from '../utils/scaleGuidance';
 
 interface DailyCheckInProps {
   date?: string;
   onSave?: (entry: DailyEntry) => void;
 }
 
-export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], onSave }: DailyCheckInProps) {
+export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   
+  const [selectedDate, setSelectedDate] = useState<string>(propDate || new Date().toISOString().split('T')[0]);
   const [energyLevel, setEnergyLevel] = useState<number>(4);
   const [focusLevel, setFocusLevel] = useState<number>(4);
   const [caffeineIntake, setCaffeineIntake] = useState<number>(0);
@@ -25,6 +28,7 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
   const [notes, setNotes] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [existingEntry, setExistingEntry] = useState<DailyEntry | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   
   // Animation values
   const buttonScale = new Animated.Value(1);
@@ -33,11 +37,17 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
 
   useEffect(() => {
     loadExistingEntry();
-  }, [date]);
+  }, [selectedDate]);
+
+  useEffect(() => {
+    if (propDate && propDate !== selectedDate) {
+      setSelectedDate(propDate);
+    }
+  }, [propDate]);
 
   const loadExistingEntry = async () => {
     try {
-      const entry = await databaseService.getDailyEntry(date);
+      const entry = await databaseService.getDailyEntry(selectedDate);
       if (entry) {
         setExistingEntry(entry);
         setEnergyLevel(entry.energy_level);
@@ -49,6 +59,10 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
         // Reset counters for new day
         setCaffeineIntake(0);
         setAlcoholIntake(0);
+        setNotes('');
+        setEnergyLevel(4);
+        setFocusLevel(4);
+        setExistingEntry(null);
       }
     } catch (error) {
       console.error('Failed to load existing entry:', error);
@@ -59,7 +73,7 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
     setIsLoading(true);
     try {
       if (existingEntry) {
-        await databaseService.updateDailyEntry(date, {
+        await databaseService.updateDailyEntry(selectedDate, {
           energy_level: energyLevel,
           focus_level: focusLevel,
           caffeine_intake: caffeineIntake,
@@ -68,7 +82,7 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
         });
       } else {
         await databaseService.addDailyEntry({
-          date,
+          date: selectedDate,
           energy_level: energyLevel,
           focus_level: focusLevel,
           caffeine_intake: caffeineIntake,
@@ -77,7 +91,7 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
         });
       }
 
-      const updatedEntry = await databaseService.getDailyEntry(date);
+      const updatedEntry = await databaseService.getDailyEntry(selectedDate);
       if (updatedEntry && onSave) {
         onSave(updatedEntry);
       }
@@ -89,6 +103,29 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDateChange = (event: any, newDate?: Date) => {
+    setShowDatePicker(false);
+    if (newDate) {
+      const dateString = newDate.toISOString().split('T')[0];
+      setSelectedDate(dateString);
+    }
+  };
+
+  const formatDateForDisplay = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const isToday = (dateString: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    return dateString === today;
   };
 
   const animateButtonPress = (animatedValue: Animated.Value) => {
@@ -112,8 +149,21 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
     
     return (
     <View style={styles.levelSection}>
-      <ThemedText style={styles.levelLabel}>{label}</ThemedText>
+      <View style={styles.levelHeader}>
+        <ThemedText type="primary" style={styles.levelLabel}>{label}</ThemedText>
+        <InfoTooltip 
+          title={isEnergySection ? getEnergyScaleGuidance().title : getFocusScaleGuidance().title}
+          content={isEnergySection ? getEnergyScaleGuidance().content : getFocusScaleGuidance().content}
+          size={16}
+        />
+      </View>
       <View style={styles.levelButtons}>
+        <View style={styles.scaleIndicator}>
+          <ThemedText style={styles.scaleLabel}>Low</ThemedText>
+          <ThemedText style={styles.scaleLabel}>Balanced</ThemedText>
+          <ThemedText style={styles.scaleLabel}>High</ThemedText>
+        </View>
+        <View style={styles.levelButtonsRow}>
         {[1, 2, 3, 4, 5, 6, 7].map((level) => (
           <Animated.View key={level} style={{ transform: [{ scale: buttonScale }] }}>
             <TouchableOpacity
@@ -145,6 +195,7 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
             </TouchableOpacity>
           </Animated.View>
         ))}
+        </View>
       </View>
     </View>
     );
@@ -152,7 +203,7 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
 
   const renderCounter = (label: string, count: number, onIncrement: () => void, onDecrement: () => void) => (
     <View style={styles.counterSection}>
-      <ThemedText style={styles.counterLabel}>{label}</ThemedText>
+      <ThemedText type="primary" style={styles.counterLabel}>{label}</ThemedText>
       <View style={styles.counterContainer}>
         <TouchableOpacity
           style={[styles.counterButton, count === 0 && styles.counterButtonDisabled]}
@@ -161,8 +212,14 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
         >
           <Text style={[styles.counterButtonText, count === 0 && styles.counterButtonTextDisabled]}>−</Text>
         </TouchableOpacity>
-        <View style={styles.counterDisplay}>
-          <Text style={styles.counterValue}>{count}</Text>
+        <View style={[
+          styles.counterDisplay,
+          { 
+            backgroundColor: colors.cardBackground,
+            borderColor: colors.border
+          }
+        ]}>
+          <Text style={[styles.counterValue, { color: colors.textPrimary }]}>{count}</Text>
         </View>
         <TouchableOpacity
           style={styles.counterButton}
@@ -217,7 +274,7 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 20}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 40}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView 
@@ -225,7 +282,7 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
             contentContainerStyle={[
               styles.scrollContainer, 
               { 
-                paddingBottom: 120
+                paddingBottom: Math.max(140 + (insets.bottom || 0), 180)
               }
             ]}
             showsVerticalScrollIndicator={false}
@@ -234,12 +291,40 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
             alwaysBounceVertical={true}
             removeClippedSubviews={false}
           >
-            <ThemedText style={styles.title}>Daily Check-In</ThemedText>
-            <ThemedText style={styles.date}>{date}</ThemedText>
+            <View style={styles.titleContainer}>
+              <ThemedText style={styles.title}>Daily Check-In</ThemedText>
+            </View>
+            
+            <TouchableOpacity
+              style={[
+                styles.dateContainer,
+                {
+                  backgroundColor: colors.cardBackground,
+                  borderColor: colors.border,
+                }
+              ]}
+              onPress={() => setShowDatePicker(true)}
+            >
+              <View style={styles.dateContent}>
+                <ThemedText style={[
+                  styles.date,
+                  { color: colors.textPrimary }
+                ]}>
+                  {formatDateForDisplay(selectedDate)}
+                </ThemedText>
+                {isToday(selectedDate) && (
+                  <View style={[styles.todayBadge, { backgroundColor: colors[getActionColor()] }]}>
+                    <Text style={styles.todayBadgeText}>Today</Text>
+                  </View>
+                )}
+              </View>
+              <ThemedText style={[styles.dateHint, { color: colors.textSecondary }]}>
+                Tap to change date
+              </ThemedText>
+            </TouchableOpacity>
 
             {/* Core FlowState Metrics */}
             <View style={styles.coreMetricsSection}>
-              <ThemedText style={styles.sectionTitle}>Core Metrics</ThemedText>
               {renderLevelButtons(energyLevel, setEnergyLevel, 'Energy Level')}
               {renderLevelButtons(focusLevel, setFocusLevel, 'Focus Level')}
               
@@ -248,7 +333,7 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
 
             {/* Lifestyle Factors */}
             <View style={styles.lifestyleSection}>
-              <ThemedText style={styles.sectionTitle}>Lifestyle Factors</ThemedText>
+              <ThemedText style={[styles.sectionTitle, { color: colors.textPrimary }]}>Lifestyle Factors</ThemedText>
               {renderCounter('Caffeine', caffeineIntake, () => setCaffeineIntake(prev => prev + 1), () => setCaffeineIntake(prev => Math.max(0, prev - 1)))}
               {renderCounter('Alcohol', alcoholIntake, () => setAlcoholIntake(prev => prev + 1), () => setAlcoholIntake(prev => Math.max(0, prev - 1)))}
             </View>
@@ -257,13 +342,20 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
             <View style={styles.notesSection}>
               <ThemedText style={styles.notesLabel}>Notes</ThemedText>
               <TextInput
-                style={styles.notesInput}
+                style={[
+                  styles.notesInput,
+                  { 
+                    backgroundColor: colors.cardBackground,
+                    borderColor: colors.border,
+                    color: colors.textPrimary
+                  }
+                ]}
                 multiline
                 numberOfLines={4}
                 value={notes}
                 onChangeText={setNotes}
                 placeholder="Life events, feelings, observations..."
-                placeholderTextColor="#666"
+                placeholderTextColor={colors.textPlaceholder}
               />
             </View>
           </ScrollView>
@@ -272,7 +364,8 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
         <View style={[
           styles.buttonContainer, 
           { 
-            paddingBottom: insets.bottom || 20
+            paddingBottom: Math.max((insets.bottom || 0) + 20, 100),
+            marginBottom: 0
           }
         ]}>
           <Animated.View style={{ transform: [{ scale: saveButtonScale }] }}>
@@ -295,6 +388,17 @@ export function DailyCheckIn({ date = new Date().toISOString().split('T')[0], on
           </Animated.View>
         </View>
       </KeyboardAvoidingView>
+      
+      {showDatePicker && (
+        <DateTimePicker
+          value={new Date(selectedDate)}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+          maximumDate={new Date()}
+          textColor={colors.textPrimary}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -310,30 +414,98 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
+    paddingTop: 20,
     paddingHorizontal: 20,
     flexGrow: 1,
+  },
+  titleContainer: {
+    position: 'relative',
+    zIndex: 999,
+    backgroundColor: 'rgba(248, 250, 252, 0.95)',
+    marginBottom: 8,
+    marginTop: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 8,
     textAlign: 'center',
+    zIndex: 999,
+  },
+  dateContainer: {
+    marginBottom: 24,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  dateContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
   },
   date: {
-    fontSize: 16,
-    marginBottom: 24,
+    fontSize: 18,
+    fontWeight: '600',
     textAlign: 'center',
+  },
+  todayBadge: {
+    marginLeft: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  todayBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  dateHint: {
+    fontSize: 12,
     opacity: 0.7,
+    textAlign: 'center',
   },
   levelSection: {
     marginBottom: 24,
   },
+  levelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   levelLabel: {
     fontSize: 20,
     fontWeight: '600',
-    marginBottom: 12,
   },
   levelButtons: {
+    flexDirection: 'column',
+  },
+  scaleIndicator: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+    paddingHorizontal: 8,
+  },
+  scaleLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    opacity: 0.6,
+    flex: 1,
+    textAlign: 'center',
+  },
+  levelButtonsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
@@ -369,12 +541,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 149, 0, 0.1)',
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    marginBottom: 16,
-    textAlign: 'center',
-    color: '#333',
   },
   notesSection: {
     marginBottom: 24,
@@ -386,11 +561,9 @@ const styles = StyleSheet.create({
   },
   notesInput: {
     borderWidth: 1,
-    borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
     textAlignVertical: 'top',
     minHeight: 100,
   },
@@ -493,15 +666,12 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f8f8',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
     marginHorizontal: 12,
   },
   counterValue: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
   },
 });

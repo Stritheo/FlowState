@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, Text } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, Text, Alert } from 'react-native';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
@@ -8,7 +8,10 @@ import { DataExport } from './DataExport';
 import { databaseService, DailyEntry } from '../services/database';
 import { Colors } from '../constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { calculateFlowState, isInFlowState, getFlowStateColor, getEnergyColor, getFocusColor, getActionColor } from '../utils/flowState';
+import { calculateFlowState, isInFlowState, getEnergyColor, getFocusColor, getActionColor } from '../utils/flowState';
+import { InfoTooltip } from './InfoTooltip';
+import { getGeneralScaleGuidance } from '../utils/scaleGuidance';
+import { exportService, ExportOptions } from '../services/exportService';
 
 type TimeRange = 'week' | 'month';
 
@@ -51,6 +54,48 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
       console.error('Failed to load entries:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDirectExport = async () => {
+    try {
+      // Get all entries for export
+      const allEntries = await databaseService.getAllEntries();
+      
+      if (allEntries.length === 0) {
+        Alert.alert('No Data', 'No tracking entries found to export.');
+        return;
+      }
+
+      // Get date range from all entries
+      const sortedEntries = allEntries.sort((a, b) => a.date.localeCompare(b.date));
+      const startDate = sortedEntries[0].date;
+      const endDate = sortedEntries[sortedEntries.length - 1].date;
+
+      // Create export options for all data
+      const exportOptions: ExportOptions = {
+        startDate,
+        endDate,
+        includeNotes: false, // Don't include notes by default for privacy
+        anonymize: false, // Don't anonymize by default 
+        analysisFormat: true // Use analysis format for better data structure
+      };
+
+      // Export the data
+      const result = await exportService.exportData(exportOptions);
+      
+      if (result.success && result.filePath) {
+        // Share the export file
+        const shared = await exportService.shareExport(result.filePath);
+        if (!shared) {
+          Alert.alert('Export Complete', `Data exported successfully!\nFile saved to: ${result.filePath}`);
+        }
+      } else {
+        Alert.alert('Export Failed', result.error || 'Unable to export data');
+      }
+    } catch (error) {
+      console.error('Direct export failed:', error);
+      Alert.alert('Export Error', 'Failed to export data. Please try again.');
     }
   };
 
@@ -155,6 +200,16 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
     });
   };
 
+  const generateWeeklySummary = (entries: DailyEntry[]) => {
+    if (entries.length === 0) return '';
+    
+    const avgEnergy = (entries.reduce((sum, entry) => sum + entry.energy_level, 0) / entries.length).toFixed(1);
+    const avgFocus = (entries.reduce((sum, entry) => sum + entry.focus_level, 0) / entries.length).toFixed(1);
+    const flowDays = entries.filter(entry => isInFlowState(entry.energy_level, entry.focus_level)).length;
+    
+    return `${entries.length} entries • Avg Energy: ${avgEnergy} • Avg Focus: ${avgFocus} • Flow Days: ${flowDays}`;
+  };
+
   const getEnergyColorForLevel = (energy: number, focus: number) => {
     return colors[getEnergyColor()];
   };
@@ -218,8 +273,8 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
     const stats = calculateSummaryStats();
     
     return (
-      <View style={styles.timeRangeContainer}>
-        <View style={styles.timeRangeTabs}>
+      <View style={[styles.timeRangeContainer, { backgroundColor: colors.cardBackground }]}>
+        <View style={[styles.timeRangeTabs, { backgroundColor: colors.border }]}>
           <TouchableOpacity
             style={[
               styles.timeRangeTab,
@@ -230,6 +285,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
           >
             <ThemedText style={[
               styles.timeRangeTabText,
+              { color: timeRange === 'week' ? '#FFFFFF' : colors.textPrimary },
               timeRange === 'week' && styles.timeRangeTabTextActive
             ]}>
               Week
@@ -245,6 +301,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
           >
             <ThemedText style={[
               styles.timeRangeTabText,
+              { color: timeRange === 'month' ? '#FFFFFF' : colors.textPrimary },
               timeRange === 'month' && styles.timeRangeTabTextActive
             ]}>
               Month
@@ -254,16 +311,16 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
         
         <View style={styles.summaryStats}>
           <View style={styles.statItem}>
-            <ThemedText style={styles.statValue}>{stats.avgEnergy}</ThemedText>
-            <ThemedText style={styles.statLabel}>Avg Energy</ThemedText>
+            <ThemedText style={[styles.statValue, { color: colors.textPrimary }]}>{stats.avgEnergy}</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: colors.textSecondary }]}>Avg Energy</ThemedText>
           </View>
           <View style={styles.statItem}>
-            <ThemedText style={styles.statValue}>{stats.avgFocus}</ThemedText>
-            <ThemedText style={styles.statLabel}>Avg Focus</ThemedText>
+            <ThemedText style={[styles.statValue, { color: colors.textPrimary }]}>{stats.avgFocus}</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: colors.textSecondary }]}>Avg Focus</ThemedText>
           </View>
           <View style={styles.statItem}>
-            <ThemedText style={styles.statValue}>{stats.flowPercentage}%</ThemedText>
-            <ThemedText style={styles.statLabel}>Flow</ThemedText>
+            <ThemedText style={[styles.statValue, { color: colors.textPrimary }]}>{stats.flowPercentage}%</ThemedText>
+            <ThemedText style={[styles.statLabel, { color: colors.textSecondary }]}>Flow</ThemedText>
           </View>
         </View>
       </View>
@@ -276,20 +333,20 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
     if (weeklyData.length === 0) return null;
 
     return (
-      <View style={styles.trendsSection}>
-        <ThemedText style={styles.trendsTitle}>{timeRange === 'week' ? 'Weekly' : 'Monthly'} Trends</ThemedText>
+      <View style={[styles.trendsSection, { backgroundColor: colors.cardBackground }]}>
+        <ThemedText style={[styles.trendsTitle, { color: colors.textPrimary }]}>{timeRange === 'week' ? 'Weekly' : 'Monthly'} Trends</ThemedText>
         
         {/* Energy/Focus Pattern Chart */}
         <View style={styles.chartContainer}>
-          <ThemedText style={styles.chartTitle}>State Patterns</ThemedText>
+          <ThemedText style={[styles.chartTitle, { color: colors.textPrimary }]}>State Patterns</ThemedText>
           <View style={styles.chartHeader}>
             <View style={styles.legendItem}>
               <View style={[styles.legendColor, { backgroundColor: colors[getEnergyColor()] }]} />
-              <ThemedText style={styles.legendText}>Energy</ThemedText>
+              <ThemedText style={[styles.legendText, { color: colors.textSecondary }]}>Energy</ThemedText>
             </View>
             <View style={styles.legendItem}>
               <View style={[styles.legendColor, { backgroundColor: colors[getFocusColor()] }]} />
-              <ThemedText style={styles.legendText}>Focus</ThemedText>
+              <ThemedText style={[styles.legendText, { color: colors.textSecondary }]}>Focus</ThemedText>
             </View>
           </View>
           
@@ -317,7 +374,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
                     ]} 
                   />
                 </View>
-                <ThemedText style={styles.dayLabel}>{day.dayName}</ThemedText>
+                <ThemedText style={[styles.dayLabel, { color: colors.textTertiary }]}>{day.dayName}</ThemedText>
                 {calculateFlowState(day.energy, day.focus).state === 'flow' && (
                   <ThemedText style={styles.flowIndicator}>💎</ThemedText>
                 )}
@@ -328,8 +385,8 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
 
         {/* Flow State Calendar */}
         <View style={styles.calendarContainer}>
-          <ThemedText style={styles.calendarTitle}>Days in Flow</ThemedText>
-          <ThemedText style={styles.flowStateSummary}>
+          <ThemedText style={[styles.calendarTitle, { color: colors.textPrimary }]}>Days in Flow</ThemedText>
+          <ThemedText style={[styles.flowStateSummary, { color: colors.textSecondary }]}>
             {weeklyData.filter(day => calculateFlowState(day.energy, day.focus).state === 'flow').length} days this {timeRange}
           </ThemedText>
           <View style={styles.calendar}>
@@ -346,7 +403,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
                   }
                 ]}
               >
-                <ThemedText style={styles.calendarDayText}>{day.date}</ThemedText>
+                <ThemedText style={[styles.calendarDayText, { color: colors.textPrimary }]}>{day.date}</ThemedText>
                 <ThemedText style={styles.calendarDayEmoji}>
                   {calculateFlowState(day.energy, day.focus).emoji}
                 </ThemedText>
@@ -358,8 +415,8 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
         {/* Correlation Display */}
         {correlation !== null && (
           <View style={styles.correlationContainer}>
-            <ThemedText style={styles.correlationTitle}>Energy-Focus Correlation</ThemedText>
-            <View style={styles.correlationBar}>
+            <ThemedText style={[styles.correlationTitle, { color: colors.textPrimary }]}>Energy-Focus Correlation</ThemedText>
+            <View style={[styles.correlationBar, { backgroundColor: colors.border }]}>
               <View 
                 style={[
                   styles.correlationFill,
@@ -374,7 +431,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
                 ]} 
               />
             </View>
-            <ThemedText style={styles.correlationText}>
+            <ThemedText style={[styles.correlationText, { color: colors.textSecondary }]}>
               {correlation > 0.3 
                 ? '💪 Strong positive pattern' 
                 : correlation < -0.3 
@@ -409,7 +466,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.header}>
-          <ThemedText style={styles.title}>Entry History</ThemedText>
+          <ThemedText style={[styles.title, { color: colors.textPrimary }]}>Entry History</ThemedText>
         </View>
         <ThemedText style={styles.loadingText}>Loading entries...</ThemedText>
       </ThemedView>
@@ -420,7 +477,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
     return (
       <ThemedView style={styles.container}>
         <View style={styles.header}>
-          <ThemedText style={styles.title}>Entry History</ThemedText>
+          <ThemedText style={[styles.title, { color: colors.textPrimary }]}>Entry History</ThemedText>
         </View>
         <ThemedText style={styles.emptyText}>No entries yet. Start tracking your daily clarity!</ThemedText>
       </ThemedView>
@@ -430,13 +487,22 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <ThemedText style={styles.title}>Entry History</ThemedText>
+        <View style={styles.titleContainer}>
+          <ThemedText style={styles.title}>Entry History</ThemedText>
+        </View>
+        <View style={styles.headerInfo}>
+          <InfoTooltip 
+            title={getGeneralScaleGuidance().title}
+            content={getGeneralScaleGuidance().content}
+            size={18}
+          />
+        </View>
       </View>
       
       <ScrollView 
         style={styles.scrollView} 
         contentContainerStyle={{
-          paddingBottom: 120
+          paddingBottom: 140 + (insets.bottom || 20)
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -455,6 +521,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
               title={`Week of ${formatDate(group.weekStart)} - ${formatDate(group.weekEnd)}`}
               expanded={!group.isCollapsed}
               onToggle={() => toggleWeekCollapse(group.weekStart)}
+              summary={generateWeeklySummary(group.entries)}
             >
               {group.entries.map((entry, entryIndex) => (
                 <TouchableOpacity
@@ -471,19 +538,19 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
                   onPress={() => onEntrySelect?.(entry)}
                 >
                   <View style={styles.entryHeader}>
-                    <ThemedText style={styles.entryDate}>{formatDate(entry.date)}</ThemedText>
+                    <ThemedText style={[styles.entryDate, { color: colors.textPrimary }]}>{formatDate(entry.date)}</ThemedText>
                   </View>
                   
                   <View style={styles.levelsContainer}>
                     <View style={styles.levelItem}>
-                      <ThemedText style={styles.levelLabel}>Energy</ThemedText>
+                      <ThemedText style={[styles.levelLabel, { color: colors.textTertiary }]}>Energy</ThemedText>
                       <View style={[styles.levelBadge, { backgroundColor: getEnergyColorForLevel(entry.energy_level, entry.focus_level) }]}>
                         <ThemedText style={styles.levelValue}>{entry.energy_level}</ThemedText>
                       </View>
                     </View>
                     
                     <View style={styles.levelItem}>
-                      <ThemedText style={styles.levelLabel}>Focus</ThemedText>
+                      <ThemedText style={[styles.levelLabel, { color: colors.textTertiary }]}>Focus</ThemedText>
                       <View style={[styles.levelBadge, { backgroundColor: getFocusColorForLevel(entry.energy_level, entry.focus_level) }]}>
                         <ThemedText style={styles.levelValue}>{entry.focus_level}</ThemedText>
                       </View>
@@ -493,7 +560,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
                   {entry.notes && entry.notes.trim() && (
                     <View style={styles.notesContainer}>
                       <ThemedText style={styles.notesLabel}>Notes:</ThemedText>
-                      <ThemedText style={styles.entryNotes} numberOfLines={3}>
+                      <ThemedText style={[styles.entryNotes, { color: colors.textSecondary }]} numberOfLines={3}>
                         {entry.notes.trim()}
                       </ThemedText>
                     </View>
@@ -509,7 +576,8 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
       <View style={[
         styles.floatingButtonContainer, 
         { 
-          paddingBottom: insets.bottom || 20
+          paddingBottom: Math.max((insets.bottom || 0) + 20, 100),
+          marginBottom: 0
         }
       ]}>
         <Animated.View style={{ transform: [{ scale: fadeAnim }] }}>
@@ -531,7 +599,27 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
                   useNativeDriver: true,
                 }),
               ]).start();
-              setShowExport(true);
+              
+              // Show action sheet for export options
+              Alert.alert(
+                'Export Data',
+                'Choose export option:',
+                [
+                  {
+                    text: 'Quick Export (All Data)',
+                    onPress: handleDirectExport,
+                  },
+                  {
+                    text: 'Advanced Export...',
+                    onPress: () => setShowExport(true),
+                  },
+                  {
+                    text: 'Cancel',
+                    style: 'cancel',
+                  },
+                ],
+                { cancelable: true }
+              );
             }}
           >
             <Text style={[styles.floatingExportButtonText, { color: '#FFFFFF' }]}>📊 Export Data</Text>
@@ -553,7 +641,9 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingTop: 36,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   header: {
     flexDirection: 'row',
@@ -561,11 +651,26 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
+  titleContainer: {
+    position: 'relative',
+    zIndex: 999,
+    backgroundColor: 'rgba(248, 250, 252, 0.95)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flex: 1,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    flex: 1,
     textAlign: 'center',
+    zIndex: 999,
+  },
+  headerInfo: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 998,
   },
   floatingButtonContainer: {
     position: 'absolute',
@@ -639,7 +744,6 @@ const styles = StyleSheet.create({
   entryDate: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
   },
   levelsContainer: {
     flexDirection: 'row',
@@ -653,7 +757,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 4,
-    color: '#666',
   },
   levelBadge: {
     width: 44,
@@ -689,7 +792,6 @@ const styles = StyleSheet.create({
   },
   entryNotes: {
     fontSize: 14,
-    color: '#666',
     fontStyle: 'italic',
     lineHeight: 20,
   },
@@ -697,7 +799,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#f8f9fa',
   },
   trendsTitle: {
     fontSize: 24,
@@ -811,7 +912,6 @@ const styles = StyleSheet.create({
   correlationBar: {
     width: '100%',
     height: 8,
-    backgroundColor: '#e0e0e0',
     borderRadius: 4,
     marginBottom: 8,
   },
@@ -828,11 +928,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#f8f9fa',
   },
   timeRangeTabs: {
     flexDirection: 'row',
-    backgroundColor: '#e9ecef',
     borderRadius: 8,
     padding: 4,
     marginBottom: 16,
@@ -857,7 +955,6 @@ const styles = StyleSheet.create({
   timeRangeTabText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#666',
   },
   timeRangeTabTextActive: {
     color: '#FFFFFF',
@@ -872,12 +969,10 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
   },
   statLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#666',
     marginTop: 4,
   },
 });

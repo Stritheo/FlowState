@@ -54,6 +54,12 @@ export const Colors = {
     warning: flowBuilding,
     error: flowLow,
     subtle: '#94A3B8',
+    
+    // Text contrast colors
+    textPrimary: '#1E293B',      // High contrast for headers
+    textSecondary: '#475569',    // Medium contrast for body text
+    textTertiary: '#64748B',     // Lower contrast for labels
+    textPlaceholder: '#94A3B8',  // Placeholder text
   },
   dark: {
     text: '#F1F5F9',
@@ -83,5 +89,11 @@ export const Colors = {
     warning: '#FF6B6B',
     error: '#45B7D1',
     subtle: '#64748B',
+    
+    // Text contrast colors
+    textPrimary: '#F8FAFC',      // High contrast for headers
+    textSecondary: '#E2E8F0',    // Medium contrast for body text
+    textTertiary: '#CBD5E1',     // Lower contrast for labels
+    textPlaceholder: '#94A3B8',  // Placeholder text
   },
 };
