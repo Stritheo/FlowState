@@ -12,6 +12,7 @@ import { calculateFlowState, isInFlowState, getEnergyColor, getFocusColor, getAc
 import { InfoTooltip } from './InfoTooltip';
 import { getGeneralScaleGuidance } from '../utils/scaleGuidance';
 import { exportService, ExportOptions } from '../services/exportService';
+import { formatDateShort, getWeekStart, getWeekEnd, getDateNDaysAgo, getDateNMonthsAgo } from '../utils/dateUtils';
 
 type TimeRange = 'week' | 'month';
 
@@ -104,10 +105,8 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
     
     allEntries.forEach((entry) => {
       const entryDate = new Date(entry.date);
-      const weekStart = new Date(entryDate);
-      weekStart.setDate(entryDate.getDate() - entryDate.getDay());
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
+      const weekStart = getWeekStart(entryDate);
+      const weekEnd = getWeekEnd(weekStart);
       
       const weekStartStr = weekStart.toISOString().split('T')[0];
       const weekEndStr = weekEnd.toISOString().split('T')[0];
@@ -149,14 +148,9 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
   };
 
   const getFilteredEntries = () => {
-    const now = new Date();
-    const startDate = new Date();
-    
-    if (timeRange === 'week') {
-      startDate.setDate(now.getDate() - 7);
-    } else {
-      startDate.setMonth(now.getMonth() - 1);
-    }
+    const startDate = timeRange === 'week' 
+      ? getDateNDaysAgo(7)
+      : getDateNMonthsAgo(1);
     
     return entries.filter(entry => {
       const entryDate = new Date(entry.date);
@@ -190,15 +184,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
     };
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
+  const formatDate = formatDateShort;
 
   const generateWeeklySummary = (entries: DailyEntry[]) => {
     if (entries.length === 0) return '';
@@ -659,6 +645,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 8,
     flex: 1,
+    marginTop: 80,
   },
   title: {
     fontSize: 28,

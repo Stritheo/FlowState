@@ -9,6 +9,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { calculateFlowState, isInFlowState, getFlowStateColor, getEnergyColor, getFocusColor, getActionColor } from '../utils/flowState';
 import { InfoTooltip } from './InfoTooltip';
 import { getEnergyScaleGuidance, getFocusScaleGuidance, getGeneralScaleGuidance } from '../utils/scaleGuidance';
+import { getCurrentDateInAustralia, formatDateForDisplay, isToday } from '../utils/dateUtils';
 
 interface DailyCheckInProps {
   date?: string;
@@ -20,7 +21,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   
-  const [selectedDate, setSelectedDate] = useState<string>(propDate || new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(propDate || getCurrentDateInAustralia());
   const [energyLevel, setEnergyLevel] = useState<number>(4);
   const [focusLevel, setFocusLevel] = useState<number>(4);
   const [caffeineIntake, setCaffeineIntake] = useState<number>(0);
@@ -113,20 +114,6 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
     }
   };
 
-  const formatDateForDisplay = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  const isToday = (dateString: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    return dateString === today;
-  };
 
   const animateButtonPress = (animatedValue: Animated.Value) => {
     Animated.sequence([
@@ -423,7 +410,7 @@ const styles = StyleSheet.create({
     zIndex: 999,
     backgroundColor: 'rgba(248, 250, 252, 0.95)',
     marginBottom: 8,
-    marginTop: 16,
+    marginTop: 80,
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
