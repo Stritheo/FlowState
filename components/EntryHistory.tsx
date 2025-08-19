@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, Text, Alert } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
 import { Collapsible } from './Collapsible';
@@ -471,7 +471,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 36) }]}>
       <View style={styles.header}>
         <View style={styles.titleContainer}>
           <ThemedText style={styles.title}>Entry History</ThemedText>
@@ -620,14 +620,13 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
       >
         <DataExport onClose={() => setShowExport(false)} />
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: 36,
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
@@ -638,20 +637,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   titleContainer: {
-    position: 'relative',
-    zIndex: 999,
-    backgroundColor: 'rgba(248, 250, 252, 0.95)',
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
     flex: 1,
-    marginTop: 80,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    zIndex: 999,
+    lineHeight: 40,
   },
   headerInfo: {
     position: 'absolute',

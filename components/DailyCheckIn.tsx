@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, ScrollView, Animated } from 'react-native';
-import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ThemedText } from './ThemedText';
 import { databaseService, DailyEntry } from '../services/database';
@@ -257,11 +257,11 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
 
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+    <View style={styles.container}>
       <KeyboardAvoidingView 
         style={styles.keyboardAvoidingView} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 120 : 40}
+        keyboardVerticalOffset={0}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView 
@@ -269,6 +269,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
             contentContainerStyle={[
               styles.scrollContainer, 
               { 
+                paddingTop: Math.max(insets.top, 20),
                 paddingBottom: Math.max(140 + (insets.bottom || 0), 180)
               }
             ]}
@@ -386,7 +387,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
           textColor={colors.textPrimary}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -401,25 +402,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContainer: {
-    paddingTop: 20,
     paddingHorizontal: 20,
     flexGrow: 1,
   },
   titleContainer: {
-    position: 'relative',
-    zIndex: 999,
-    backgroundColor: 'rgba(248, 250, 252, 0.95)',
     marginBottom: 8,
-    marginTop: 80,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 8,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     textAlign: 'center',
-    zIndex: 999,
+    lineHeight: 40,
   },
   dateContainer: {
     marginBottom: 24,
