@@ -270,7 +270,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
               styles.scrollContainer, 
               { 
                 paddingTop: Math.max(insets.top, 20),
-                paddingBottom: Math.max(140 + (insets.bottom || 0), 180)
+                paddingBottom: 100 + (insets.bottom || 20)
               }
             ]}
             showsVerticalScrollIndicator={false}
@@ -352,7 +352,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
         <View style={[
           styles.buttonContainer, 
           { 
-            paddingBottom: Math.max((insets.bottom || 0) + 20, 100),
+            paddingBottom: Math.max((insets.bottom || 0) + 20, 40),
             marginBottom: 0
           }
         ]}>

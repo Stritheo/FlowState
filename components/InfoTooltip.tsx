@@ -108,8 +108,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   scrollView: {
-    flexGrow: 1,
-    maxHeight: Dimensions.get('window').height * 0.5,
+    maxHeight: Dimensions.get('window').height * 0.55,
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
@@ -120,7 +119,6 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     paddingVertical: 12,
     paddingHorizontal: 8,
-    flexGrow: 1,
   },
   tooltipContent: {
     fontSize: 16,

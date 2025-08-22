@@ -488,7 +488,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
       <ScrollView 
         style={styles.scrollView} 
         contentContainerStyle={{
-          paddingBottom: 140 + (insets.bottom || 20)
+          paddingBottom: 100 + (insets.bottom || 20)
         }}
         showsVerticalScrollIndicator={false}
       >
@@ -562,7 +562,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
       <View style={[
         styles.floatingButtonContainer, 
         { 
-          paddingBottom: Math.max((insets.bottom || 0) + 20, 100),
+          paddingBottom: Math.max((insets.bottom || 0) + 20, 40),
           marginBottom: 0
         }
       ]}>

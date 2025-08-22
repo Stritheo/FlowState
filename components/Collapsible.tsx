@@ -1,4 +1,4 @@
-import { PropsWithChildren, useState } from 'react';
+import { PropsWithChildren, useState, useEffect } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 
 import { ThemedText } from '@/components/ThemedText';
@@ -18,6 +18,12 @@ interface CollapsibleProps extends PropsWithChildren {
 export function Collapsible({ children, title, expanded, onToggle, summary }: CollapsibleProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const theme = useColorScheme() ?? 'light';
+  
+  useEffect(() => {
+    if (expanded !== undefined) {
+      setInternalIsOpen(expanded);
+    }
+  }, [expanded]);
   
   const isOpen = expanded !== undefined ? expanded : internalIsOpen;
   const handleToggle = onToggle || (() => setInternalIsOpen((value) => !value));
