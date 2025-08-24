@@ -1,6 +1,5 @@
 export interface FlowStateResult {
   state: 'flow' | 'high-energy' | 'low-energy' | 'building-focus';
-  emoji: string;
   label: string;
   color: 'flowActive' | 'flowBuilding' | 'flowLow';
 }
@@ -22,7 +21,6 @@ export function calculateFlowState(energy: number, focus: number): FlowStateResu
   if (energy >= 3 && energy <= 5 && focus >= 3 && focus <= 5) {
     return {
       state: 'flow',
-      emoji: '💎',
       label: 'Flow State',
       color: 'flowActive'
     };
@@ -32,7 +30,6 @@ export function calculateFlowState(energy: number, focus: number): FlowStateResu
   if (energy >= 6) {
     return {
       state: 'high-energy',
-      emoji: '⚡',
       label: 'High Energy',
       color: 'flowBuilding'
     };
@@ -42,7 +39,6 @@ export function calculateFlowState(energy: number, focus: number): FlowStateResu
   if (energy <= 2) {
     return {
       state: 'low-energy',
-      emoji: '💤',
       label: 'Low Energy',
       color: 'flowLow'
     };
@@ -51,7 +47,6 @@ export function calculateFlowState(energy: number, focus: number): FlowStateResu
   // Building Focus: All other combinations (energy 3-5 but focus outside 3-5)
   return {
     state: 'building-focus',
-    emoji: '🎯',
     label: 'Building Focus',
     color: 'flowActive'
   };

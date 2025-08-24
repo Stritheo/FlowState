@@ -9,7 +9,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { calculateFlowState, isInFlowState, getFlowStateColor, getEnergyColor, getFocusColor, getActionColor } from '../utils/flowState';
 import { InfoTooltip } from './InfoTooltip';
 import { getEnergyScaleGuidance, getFocusScaleGuidance, getGeneralScaleGuidance } from '../utils/scaleGuidance';
-import { getCurrentDateInAustralia, formatDateForDisplay, isToday } from '../utils/dateUtils';
+import { getCurrentDateInAustralia, formatDateForDisplay, isToday, AUSTRALIA_TIMEZONE } from '../utils/dateUtils';
 
 interface DailyCheckInProps {
   date?: string;
@@ -109,7 +109,11 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
   const handleDateChange = (event: any, newDate?: Date) => {
     setShowDatePicker(false);
     if (newDate) {
-      const dateString = newDate.toISOString().split('T')[0];
+      // Use Australian timezone formatting to match getCurrentDateInAustralia()
+      const formatter = new Intl.DateTimeFormat('en-CA', {
+        timeZone: AUSTRALIA_TIMEZONE
+      });
+      const dateString = formatter.format(newDate);
       setSelectedDate(dateString);
     }
   };
@@ -249,7 +253,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
         ]}
       >
         <Text style={[styles.flowStateText, { color: getFlowStateColorValue() }]}>
-          {flowStateResult.emoji} {flowStateResult.label}
+          {flowStateResult.label}
         </Text>
       </Animated.View>
     </View>
@@ -280,7 +284,22 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
             removeClippedSubviews={false}
           >
             <View style={styles.titleContainer}>
-              <ThemedText style={styles.title}>Daily Check-In</ThemedText>
+              <View style={styles.titleRow}>
+                <ThemedText style={styles.title}>Check-In</ThemedText>
+                <InfoTooltip 
+                  title="Welcome to FlowState"
+                  content="Welcome to FlowState
+
+FlowState helps you discover and maintain your optimal performance state by tracking energy and focus patterns.
+
+Quick daily check-ins help identify when you're in your Flow State (both energy and focus between 3-5).
+
+Track patterns over time, identify your optimal zones, and export data for deeper analysis.
+
+Getting started: Use the sliders below to record your current energy and focus levels on a 1-7 scale."
+                  size={18}
+                />
+              </View>
             </View>
             
             <TouchableOpacity
@@ -410,11 +429,17 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'center',
+    textAlign: 'left',
     lineHeight: 40,
+    flex: 1,
   },
   dateContainer: {
     marginBottom: 24,
@@ -433,7 +458,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   dateContent: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 4,
@@ -442,12 +467,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     textAlign: 'center',
+    marginBottom: 4,
   },
   todayBadge: {
-    marginLeft: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    alignSelf: 'center',
   },
   todayBadgeText: {
     fontSize: 12,

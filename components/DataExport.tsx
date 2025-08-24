@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet, ScrollView, Switch, Animated } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, Alert, StyleSheet, ScrollView, Switch, Animated, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from './ThemedText';
 import { exportService, ExportOptions } from '../services/exportService';
+import { databaseService } from '../services/database';
 import { Colors } from '../constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getActionColor } from '../utils/flowState';
@@ -10,6 +11,49 @@ import { getActionColor } from '../utils/flowState';
 interface DataExportProps {
   onClose?: () => void;
 }
+
+type TimeRange = 'day' | 'week' | 'month' | 'all';
+
+interface DeletionOption {
+  range: TimeRange;
+  title: string;
+  description: string;
+  confirmationTitle: string;
+  confirmationMessage: (count: number) => string;
+  isDestructive?: boolean;
+}
+
+const DELETION_OPTIONS: DeletionOption[] = [
+  {
+    range: 'day',
+    title: "Delete Today's Data",
+    description: 'Last 24 hours',
+    confirmationTitle: 'Delete Today\'s Data',
+    confirmationMessage: (count) => `Delete ${count} ${count === 1 ? 'entry' : 'entries'} from today?`,
+  },
+  {
+    range: 'week',
+    title: 'Delete Past Week',
+    description: 'Last 7 days',
+    confirmationTitle: 'Delete Past Week',
+    confirmationMessage: (count) => `Delete ${count} ${count === 1 ? 'entry' : 'entries'} from the past 7 days?`,
+  },
+  {
+    range: 'month',
+    title: 'Delete Past Month',
+    description: 'Last 30 days',
+    confirmationTitle: 'Delete Past Month',
+    confirmationMessage: (count) => `Delete ${count} ${count === 1 ? 'entry' : 'entries'} from the past 30 days?`,
+  },
+  {
+    range: 'all',
+    title: 'Delete All Data',
+    description: 'Complete reset',
+    confirmationTitle: 'Delete All Data',
+    confirmationMessage: (count) => `Permanently delete ALL ${count} ${count === 1 ? 'entry' : 'entries'}? This cannot be undone.`,
+    isDestructive: true,
+  },
+];
 
 export function DataExport({ onClose }: DataExportProps) {
   const colorScheme = useColorScheme();
@@ -32,13 +76,12 @@ export function DataExport({ onClose }: DataExportProps) {
   };
 
   const [startDate, setStartDate] = useState<string>(() => {
-    const date = new Date();
-    date.setMonth(date.getMonth() - 1); // Default to last month
-    return date.toISOString().split('T')[0];
+    const now = Date.now();
+    return new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // Default to last month
   });
   
   const [endDate, setEndDate] = useState<string>(() => {
-    return new Date().toISOString().split('T')[0];
+    return new Date(Date.now()).toISOString().split('T')[0];
   });
   
   const [includeNotes, setIncludeNotes] = useState<boolean>(false);
@@ -47,24 +90,35 @@ export function DataExport({ onClose }: DataExportProps) {
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [preview, setPreview] = useState<string>('');
   const [showPreview, setShowPreview] = useState<boolean>(false);
+  
+  // Data management state
+  const [entryCounts, setEntryCounts] = useState<Record<TimeRange, number>>({
+    day: 0,
+    week: 0,
+    month: 0,
+    all: 0,
+  });
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+  const [loadingCounts, setLoadingCounts] = useState<boolean>(false);
+
+  useEffect(() => {
+    loadEntryCounts();
+  }, []);
 
   const handleDatePreset = (preset: 'week' | 'month' | 'quarter' | 'all') => {
-    const end = new Date().toISOString().split('T')[0];
+    const now = Date.now();
+    const end = new Date(now).toISOString().split('T')[0];
     let start: string;
     
-    const today = new Date();
     switch (preset) {
       case 'week':
-        today.setDate(today.getDate() - 7);
-        start = today.toISOString().split('T')[0];
+        start = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         break;
       case 'month':
-        today.setMonth(today.getMonth() - 1);
-        start = today.toISOString().split('T')[0];
+        start = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         break;
       case 'quarter':
-        today.setMonth(today.getMonth() - 3);
-        start = today.toISOString().split('T')[0];
+        start = new Date(now - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         break;
       case 'all':
         start = '2020-01-01'; // Far back date to get all data
@@ -88,7 +142,7 @@ export function DataExport({ onClose }: DataExportProps) {
       const previewText = await exportService.getExportPreview(options, 3);
       setPreview(previewText);
       setShowPreview(true);
-    } catch (error) {
+    } catch {
       Alert.alert('Preview Error', 'Unable to generate preview');
     }
   };
@@ -137,11 +191,80 @@ export function DataExport({ onClose }: DataExportProps) {
       } else {
         Alert.alert('Export Failed', result.error || 'Unknown error occurred');
       }
-    } catch (error) {
+    } catch {
       Alert.alert('Export Error', 'Failed to export data');
     } finally {
       setIsExporting(false);
     }
+  };
+
+  const loadEntryCounts = async () => {
+    setLoadingCounts(true);
+    try {
+      const counts = await Promise.all([
+        databaseService.getEntryCountByRange('day'),
+        databaseService.getEntryCountByRange('week'),
+        databaseService.getEntryCountByRange('month'),
+        databaseService.getEntryCountByRange('all'),
+      ]);
+      
+      setEntryCounts({
+        day: counts[0],
+        week: counts[1],
+        month: counts[2],
+        all: counts[3],
+      });
+    } catch (error) {
+      console.error('Failed to load entry counts:', error);
+    } finally {
+      setLoadingCounts(false);
+    }
+  };
+
+  const handleDeleteData = async (option: DeletionOption) => {
+    const count = entryCounts[option.range];
+    
+    if (count === 0) {
+      Alert.alert('No Data', `There are no entries to delete in the selected timeframe.`);
+      return;
+    }
+
+    Alert.alert(
+      option.confirmationTitle,
+      option.confirmationMessage(count),
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Delete',
+          style: option.isDestructive ? 'destructive' : 'default',
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              const deletedCount = await databaseService.deleteDataByRange(option.range);
+              Alert.alert(
+                'Success',
+                `Deleted ${deletedCount} ${deletedCount === 1 ? 'entry' : 'entries'}`,
+                [{ text: 'OK' }]
+              );
+              // Refresh the counts
+              await loadEntryCounts();
+            } catch (error) {
+              console.error('Failed to delete data:', error);
+              Alert.alert(
+                'Error',
+                'Failed to delete data. Please try again.',
+                [{ text: 'OK' }]
+              );
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const renderDateInput = (label: string, value: string, onChange: (date: string) => void) => (
@@ -239,6 +362,76 @@ export function DataExport({ onClose }: DataExportProps) {
             'Include personal notes in the export (may contain sensitive information)',
             includeNotes,
             setIncludeNotes
+          )}
+        </View>
+
+        {/* Divider */}
+        <View style={styles.divider} />
+
+        {/* Data Management Section */}
+        <View style={styles.section}>
+          <ThemedText style={styles.sectionTitle}>Data Management</ThemedText>
+          
+          {loadingCounts ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={colors.tint} />
+              <ThemedText style={[styles.loadingText, { color: colors.textSecondary }]}>
+                Loading entry counts...
+              </ThemedText>
+            </View>
+          ) : (
+            <View style={styles.deleteOptionsContainer}>
+              {DELETION_OPTIONS.map((option) => {
+                const count = entryCounts[option.range];
+                const isDisabled = count === 0;
+                
+                return (
+                  <TouchableOpacity
+                    key={option.range}
+                    style={[
+                      styles.deleteOption,
+                      { 
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
+                      isDisabled && styles.deleteOptionDisabled,
+                    ]}
+                    onPress={() => handleDeleteData(option)}
+                    disabled={isDisabled || isDeleting}
+                  >
+                    <View style={styles.deleteOptionContent}>
+                      <ThemedText 
+                        style={[
+                          styles.deleteOptionTitle,
+                          { color: '#FF3B30' },
+                          option.isDestructive && { fontWeight: 'bold' },
+                          isDisabled && { color: colors.textTertiary },
+                        ]}
+                      >
+                        {option.title}
+                      </ThemedText>
+                      <ThemedText 
+                        style={[
+                          styles.deleteOptionCount,
+                          { color: colors.textSecondary },
+                          isDisabled && { color: colors.textTertiary },
+                        ]}
+                      >
+                        {isDisabled ? 'No entries' : `${count} ${count === 1 ? 'entry' : 'entries'}`}
+                      </ThemedText>
+                    </View>
+                    <ThemedText 
+                      style={[
+                        styles.deleteOptionDescription,
+                        { color: colors.textTertiary },
+                      ]}
+                    >
+                      {option.description}
+                    </ThemedText>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           )}
         </View>
 
@@ -471,5 +664,49 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E5E5',
+    marginVertical: 24,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginLeft: 12,
+    fontSize: 14,
+  },
+  deleteOptionsContainer: {
+    marginTop: 8,
+  },
+  deleteOption: {
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  deleteOptionDisabled: {
+    opacity: 0.5,
+  },
+  deleteOptionContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  deleteOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  deleteOptionCount: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  deleteOptionDescription: {
+    fontSize: 12,
   },
 });

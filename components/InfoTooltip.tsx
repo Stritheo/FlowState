@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import { Text, TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { Colors } from '../constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -25,7 +25,7 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
         accessibilityRole="button"
         accessibilityHint="Tap to view scale guidance"
       >
-        <Text style={[styles.infoIcon, { fontSize: size, color: colors.icon }]}>ⓘ</Text>
+        <Text style={[styles.infoIcon, { fontSize: size, color: colors.icon }]}>i</Text>
       </TouchableOpacity>
 
       <Modal
@@ -44,16 +44,18 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
-            <ThemedText style={styles.tooltipTitle}>{title}</ThemedText>
-            <ScrollView 
-              style={styles.scrollView}
-              contentContainerStyle={styles.scrollViewContent}
-              showsVerticalScrollIndicator={true}
-              indicatorStyle={colorScheme === 'dark' ? 'white' : 'black'}
-              nestedScrollEnabled={true}
-            >
-              <ThemedText style={styles.tooltipContent}>{content}</ThemedText>
-            </ScrollView>
+            <ThemedText style={styles.tooltipTitle}>{title || ''}</ThemedText>
+            <View style={{ maxHeight: 400, minHeight: 100 }}>
+              <ScrollView 
+                style={{ flex: 0 }}
+                contentContainerStyle={{ paddingBottom: 20, flexGrow: 1 }}
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled={true}
+                bounces={true}
+              >
+                <ThemedText style={styles.tooltipContent}>{content || ''}</ThemedText>
+              </ScrollView>
+            </View>
             <TouchableOpacity
               style={[styles.closeButton, { backgroundColor: colors.actionColor }]}
               onPress={() => setShowModal(false)}
@@ -106,19 +108,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 12,
     textAlign: 'center',
-  },
-  scrollView: {
-    maxHeight: Dimensions.get('window').height * 0.55,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderTopColor: 'rgba(0, 0, 0, 0.1)',
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
-    marginVertical: 8,
-    paddingHorizontal: 4,
-  },
-  scrollViewContent: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
   },
   tooltipContent: {
     fontSize: 16,

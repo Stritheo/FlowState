@@ -5,21 +5,18 @@ describe('Flow State Calculations', () => {
     test('should return flow state when both energy and focus are 3-5', () => {
       expect(calculateFlowState(3, 3)).toEqual({
         state: 'flow',
-        emoji: '💎',
         label: 'Flow State',
         color: 'flowActive'
       });
       
       expect(calculateFlowState(4, 5)).toEqual({
         state: 'flow',
-        emoji: '💎',
         label: 'Flow State',
         color: 'flowActive'
       });
       
       expect(calculateFlowState(5, 4)).toEqual({
         state: 'flow',
-        emoji: '💎',
         label: 'Flow State',
         color: 'flowActive'
       });
@@ -28,14 +25,12 @@ describe('Flow State Calculations', () => {
     test('should return high energy when energy is 6-7', () => {
       expect(calculateFlowState(6, 2)).toEqual({
         state: 'high-energy',
-        emoji: '⚡',
         label: 'High Energy',
         color: 'flowBuilding'
       });
       
       expect(calculateFlowState(7, 5)).toEqual({
         state: 'high-energy',
-        emoji: '⚡',
         label: 'High Energy',
         color: 'flowBuilding'
       });
@@ -44,14 +39,12 @@ describe('Flow State Calculations', () => {
     test('should return low energy when energy is 1-2', () => {
       expect(calculateFlowState(1, 4)).toEqual({
         state: 'low-energy',
-        emoji: '💤',
         label: 'Low Energy',
         color: 'flowLow'
       });
       
       expect(calculateFlowState(2, 6)).toEqual({
         state: 'low-energy',
-        emoji: '💤',
         label: 'Low Energy',
         color: 'flowLow'
       });
@@ -60,21 +53,18 @@ describe('Flow State Calculations', () => {
     test('should return building focus for other combinations', () => {
       expect(calculateFlowState(3, 2)).toEqual({
         state: 'building-focus',
-        emoji: '🎯',
         label: 'Building Focus',
         color: 'flowActive'
       });
       
       expect(calculateFlowState(4, 6)).toEqual({
         state: 'building-focus',
-        emoji: '🎯',
         label: 'Building Focus',
         color: 'flowActive'
       });
       
       expect(calculateFlowState(5, 1)).toEqual({
         state: 'building-focus',
-        emoji: '🎯',
         label: 'Building Focus',
         color: 'flowActive'
       });

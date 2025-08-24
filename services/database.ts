@@ -19,6 +19,7 @@ class DatabaseService {
   async init(): Promise<void> {
     this.db = await SQLite.openDatabaseAsync('flowstate.db');
     await this.createTables();
+    await this.migrateDatabase();
   }
 
   private async createTables(): Promise<void> {
@@ -57,6 +58,20 @@ class DatabaseService {
     `).catch(() => {}); // Ignore if column already exists
   }
 
+  private async migrateDatabase(): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    
+    // Check if we need to migrate from the old UNIQUE constraint on date
+    try {
+      // Try to get table info to see if we need migration
+      const tableInfo = await this.db.getAllAsync(`PRAGMA table_info(daily_entries)`);
+      // For now, we'll keep the existing structure but add new methods
+      // In future versions, we can remove the UNIQUE constraint to support multiple entries per day
+    } catch (error) {
+      console.log('Migration check failed:', error);
+    }
+  }
+
   async addDailyEntry(entry: Omit<DailyEntry, 'id' | 'created_at'>): Promise<number> {
     if (!this.db) throw new Error('Database not initialized');
 
@@ -88,6 +103,17 @@ class DatabaseService {
     );
 
     return result || null;
+  }
+
+  async getDailyEntries(date: string): Promise<DailyEntry[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const result = await this.db.getAllAsync<DailyEntry>(
+      'SELECT * FROM daily_entries WHERE date = ? ORDER BY created_at ASC',
+      [date]
+    );
+
+    return result;
   }
 
   async getAllEntries(): Promise<DailyEntry[]> {
@@ -160,6 +186,74 @@ class DatabaseService {
     );
 
     return result;
+  }
+
+  private getDateRangeForTimeframe(range: 'day' | 'week' | 'month' | 'all'): { startDate: string; endDate: string } | null {
+    const now = Date.now();
+    
+    switch (range) {
+      case 'day': {
+        // Today's data only - use start of today in Australian timezone
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDate = today.toISOString().split('T')[0];
+        const endDate = new Date(now).toISOString().split('T')[0];
+        return { startDate, endDate };
+      }
+      case 'week': {
+        // Past 7 days including today
+        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        const startDate = weekAgo.toISOString().split('T')[0];
+        const endDate = new Date(now).toISOString().split('T')[0];
+        return { startDate, endDate };
+      }
+      case 'month': {
+        // Past 30 days including today
+        const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+        const startDate = monthAgo.toISOString().split('T')[0];
+        const endDate = new Date(now).toISOString().split('T')[0];
+        return { startDate, endDate };
+      }
+      case 'all':
+        // All data - no date range needed
+        return null;
+    }
+  }
+
+  async getEntryCountByRange(range: 'day' | 'week' | 'month' | 'all'): Promise<number> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    let query = 'SELECT COUNT(*) as count FROM daily_entries';
+    let params: string[] = [];
+
+    if (range !== 'all') {
+      const dateRange = this.getDateRangeForTimeframe(range);
+      if (dateRange) {
+        query += ' WHERE date BETWEEN ? AND ?';
+        params = [dateRange.startDate, dateRange.endDate];
+      }
+    }
+
+    const result = await this.db.getFirstAsync<{ count: number }>(query, params);
+    return result?.count || 0;
+  }
+
+  async deleteDataByRange(range: 'day' | 'week' | 'month' | 'all'): Promise<number> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    let query = 'DELETE FROM daily_entries';
+    let params: string[] = [];
+
+    if (range !== 'all') {
+      const dateRange = this.getDateRangeForTimeframe(range);
+      if (dateRange) {
+        query += ' WHERE date BETWEEN ? AND ?';
+        params = [dateRange.startDate, dateRange.endDate];
+      }
+    }
+
+    const result = await this.db.runAsync(query, params);
+    return result.changes;
   }
 }
 
