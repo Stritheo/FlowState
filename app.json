@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "FlowState: Diamond Clarity",
+    "slug": "flowstate-diamond-clarity",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "flowstate",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "description": "Discover your diamond clarity moments. Track energy, focus, and mental precision with professional-grade analytics.",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.flowstate.diamondclarity",
+      "buildNumber": "1",
+      "infoPlist": {
+        "CFBundleDisplayName": "FlowState",
+        "NSAppTransportSecurity": {
+          "NSAllowsArbitraryLoads": false
+        }
+      }
+    },
+    "android": {
+      "package": "com.flowstate.diamondclarity",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#e1e8ff"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": []
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      "expo-sqlite"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
