@@ -176,13 +176,13 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
                 setLevel(level);
               }}
             >
-              <Text style={[
+              <ThemedText style={[
                 styles.levelButtonText,
                 { color: colors.text },
                 currentLevel === level && { color: '#FFFFFF' }
               ]}>
                 {level}
-              </Text>
+              </ThemedText>
             </TouchableOpacity>
           </Animated.View>
         ))}
@@ -201,7 +201,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
           onPress={onDecrement}
           disabled={count === 0}
         >
-          <Text style={[styles.counterButtonText, count === 0 && styles.counterButtonTextDisabled]}>−</Text>
+          <ThemedText style={[styles.counterButtonText, count === 0 && styles.counterButtonTextDisabled]}>−</ThemedText>
         </TouchableOpacity>
         <View style={[
           styles.counterDisplay,
@@ -210,13 +210,13 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
             borderColor: colors.border
           }
         ]}>
-          <Text style={[styles.counterValue, { color: colors.textPrimary }]}>{count}</Text>
+          <ThemedText style={[styles.counterValue, { color: colors.textPrimary }]}>{count}</ThemedText>
         </View>
         <TouchableOpacity
           style={styles.counterButton}
           onPress={onIncrement}
         >
-          <Text style={styles.counterButtonText}>+</Text>
+          <ThemedText style={styles.counterButtonText}>+</ThemedText>
         </TouchableOpacity>
       </View>
     </View>
@@ -252,9 +252,9 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
           }
         ]}
       >
-        <Text style={[styles.flowStateText, { color: getFlowStateColorValue() }]}>
+        <ThemedText style={[styles.flowStateText, { color: getFlowStateColorValue() }]}>
           {flowStateResult.label}
-        </Text>
+        </ThemedText>
       </Animated.View>
     </View>
   );
@@ -321,7 +321,7 @@ Getting started: Use the sliders below to record your current energy and focus l
                 </ThemedText>
                 {isToday(selectedDate) && (
                   <View style={[styles.todayBadge, { backgroundColor: colors[getActionColor()] }]}>
-                    <Text style={styles.todayBadgeText}>Today</Text>
+                    <ThemedText style={styles.todayBadgeText}>Today</ThemedText>
                   </View>
                 )}
               </View>
@@ -388,9 +388,9 @@ Getting started: Use the sliders below to record your current energy and focus l
               }}
               disabled={isLoading}
             >
-              <Text style={[styles.saveButtonText, { color: '#FFFFFF' }]}>
+              <ThemedText style={[styles.saveButtonText, { color: '#FFFFFF' }]}>
                 {isLoading ? 'Saving...' : existingEntry ? 'Update Check-In' : 'Save Check-In'}
-              </Text>
+              </ThemedText>
             </TouchableOpacity>
           </Animated.View>
         </View>

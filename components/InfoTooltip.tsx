@@ -25,7 +25,7 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
         accessibilityRole="button"
         accessibilityHint="Tap to view scale guidance"
       >
-        <Text style={[styles.infoIcon, { fontSize: size, color: colors.icon }]}>i</Text>
+        <ThemedText style={[styles.infoIcon, { fontSize: size, color: colors.icon }]}>i</ThemedText>
       </TouchableOpacity>
 
       <Modal
@@ -52,7 +52,7 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
                 accessibilityLabel="Close tooltip"
                 accessibilityRole="button"
               >
-                <Text style={[styles.closeXText, { color: colors.text }]}>✕</Text>
+                <ThemedText style={[styles.closeXText, { color: colors.text }]}>✕</ThemedText>
               </TouchableOpacity>
             </View>
             <ThemedText style={styles.tooltipTitle}>{title || ''}</ThemedText>

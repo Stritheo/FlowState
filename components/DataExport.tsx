@@ -278,7 +278,7 @@ export function DataExport({ onClose }: DataExportProps) {
           Alert.alert('Date Selection', `Current: ${value}\nTo change dates, use the preset buttons below.`);
         }}
       >
-        <Text style={[styles.dateText, { color: colors.textPrimary }]}>{value}</Text>
+        <ThemedText style={[styles.dateText, { color: colors.textPrimary }]}>{value}</ThemedText>
       </TouchableOpacity>
     </View>
   );
@@ -308,7 +308,7 @@ export function DataExport({ onClose }: DataExportProps) {
 
         {/* Privacy Notice */}
         <View style={styles.privacyNotice}>
-          <Text style={styles.privacyIcon}>🔒</Text>
+          <ThemedText style={styles.privacyIcon}>🔒</ThemedText>
           <ThemedText style={styles.privacyText}>
             Privacy-first export with anonymisation options for secure data sharing
           </ThemedText>
@@ -325,16 +325,16 @@ export function DataExport({ onClose }: DataExportProps) {
 
           <View style={styles.presetButtons}>
             <TouchableOpacity style={styles.presetButton} onPress={() => handleDatePreset('week')}>
-              <Text style={styles.presetButtonText}>Last Week</Text>
+              <ThemedText style={styles.presetButtonText}>Last Week</ThemedText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.presetButton} onPress={() => handleDatePreset('month')}>
-              <Text style={styles.presetButtonText}>Last Month</Text>
+              <ThemedText style={styles.presetButtonText}>Last Month</ThemedText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.presetButton} onPress={() => handleDatePreset('quarter')}>
-              <Text style={styles.presetButtonText}>Last 3 Months</Text>
+              <ThemedText style={styles.presetButtonText}>Last 3 Months</ThemedText>
             </TouchableOpacity>
             <TouchableOpacity style={styles.presetButton} onPress={() => handleDatePreset('all')}>
-              <Text style={styles.presetButtonText}>All Data</Text>
+              <ThemedText style={styles.presetButtonText}>All Data</ThemedText>
             </TouchableOpacity>
           </View>
         </View>
@@ -438,14 +438,14 @@ export function DataExport({ onClose }: DataExportProps) {
         {/* Preview Section */}
         <View style={styles.section}>
           <TouchableOpacity style={styles.previewButton} onPress={generatePreview}>
-            <Text style={styles.previewButtonText}>Preview Export</Text>
+            <ThemedText style={styles.previewButtonText}>Preview Export</ThemedText>
           </TouchableOpacity>
           
           {showPreview && (
             <View style={styles.previewContainer}>
               <ThemedText style={styles.previewTitle}>Export Preview:</ThemedText>
               <View style={styles.previewContent}>
-                <Text style={[styles.previewText, { color: colors.textPrimary }]}>{preview}</Text>
+                <ThemedText style={[styles.previewText, { color: colors.textPrimary }]}>{preview}</ThemedText>
               </View>
             </View>
           )}
@@ -466,15 +466,15 @@ export function DataExport({ onClose }: DataExportProps) {
               }}
               disabled={isExporting}
             >
-              <Text style={[styles.exportButtonText, { color: '#FFFFFF' }]}>
+              <ThemedText style={[styles.exportButtonText, { color: '#FFFFFF' }]}>
                 {isExporting ? 'Exporting...' : 'Export & Share'}
-              </Text>
+              </ThemedText>
             </TouchableOpacity>
           </Animated.View>
           
           {onClose && (
             <TouchableOpacity style={styles.cancelButton} onPress={onClose}>
-              <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</Text>
+              <ThemedText style={[styles.cancelButtonText, { color: colors.textSecondary }]}>Cancel</ThemedText>
             </TouchableOpacity>
           )}
         </View>
