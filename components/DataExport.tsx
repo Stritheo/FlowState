@@ -5,7 +5,7 @@ import { ThemedText } from './ThemedText';
 import { exportService, ExportOptions } from '../services/exportService';
 import { databaseService } from '../services/database';
 import { Colors } from '../constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import useColorScheme from '@/hooks/useColorScheme';
 import { getActionColor } from '../utils/flowState';
 
 interface DataExportProps {

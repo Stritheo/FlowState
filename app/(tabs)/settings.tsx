@@ -9,7 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import useColorScheme from '@/hooks/useColorScheme';
 import { DataExport } from '@/components/DataExport';
 
 export default function SettingsScreen() {

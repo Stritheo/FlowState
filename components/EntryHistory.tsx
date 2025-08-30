@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, Text, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
@@ -7,7 +7,7 @@ import { Collapsible } from './Collapsible';
 import { DataExport } from './DataExport';
 import { databaseService, DailyEntry } from '../services/database';
 import { Colors } from '../constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import useColorScheme from '@/hooks/useColorScheme';
 import { calculateFlowState, isInFlowState, getActionColor } from '../utils/flowState';
 import { InfoTooltip } from './InfoTooltip';
 import { getGeneralScaleGuidance } from '../utils/scaleGuidance';
@@ -457,7 +457,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
               if (!day.isFlowState) return null;
               const x = paddingX + (index / Math.max(data.length - 1, 1)) * (width - 2 * paddingX);
               return (
-                <Text
+                <ThemedText
                   key={`diamond-${index}`}
                   style={[
                     styles.flowDiamond,
@@ -470,7 +470,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
                   ]}
                 >
                   ◆
-                </Text>
+                </ThemedText>
               );
             })}
           </View>
@@ -761,7 +761,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
               );
             }}
           >
-            <Text style={[styles.floatingExportButtonText, { color: '#FFFFFF', fontWeight: '600' }]}>Export Data</Text>
+            <ThemedText style={[styles.floatingExportButtonText, { color: '#FFFFFF', fontWeight: '600' }]}>Export Data</ThemedText>
           </TouchableOpacity>
         </Animated.View>
       </View>

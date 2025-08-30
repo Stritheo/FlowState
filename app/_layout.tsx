@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+import useColorScheme from '@/hooks/useColorScheme';
 import { databaseService } from '@/services/database';
 
 export default function RootLayout() {

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Text, TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { Colors } from '../constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import useColorScheme from '@/hooks/useColorScheme';
 
 interface InfoTooltipProps {
   title: string;
@@ -44,24 +44,26 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
-            <ThemedText style={styles.tooltipTitle}>{title || ''}</ThemedText>
-            <View style={{ maxHeight: 400, minHeight: 100 }}>
-              <ScrollView 
-                style={{ flex: 0 }}
-                contentContainerStyle={{ paddingBottom: 20, flexGrow: 1 }}
-                showsVerticalScrollIndicator={true}
-                nestedScrollEnabled={true}
-                bounces={true}
+            <View style={styles.closeX}>
+              <TouchableOpacity
+                onPress={() => setShowModal(false)}
+                style={styles.closeXButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityLabel="Close tooltip"
+                accessibilityRole="button"
               >
-                <ThemedText style={styles.tooltipContent}>{content || ''}</ThemedText>
-              </ScrollView>
+                <Text style={[styles.closeXText, { color: colors.text }]}>✕</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={[styles.closeButton, { backgroundColor: colors.actionColor }]}
-              onPress={() => setShowModal(false)}
+            <ThemedText style={styles.tooltipTitle}>{title || ''}</ThemedText>
+            <ScrollView 
+              style={styles.scrollView}
+              contentContainerStyle={{ paddingBottom: 20 }}
+              showsVerticalScrollIndicator={true}
+              bounces={true}
             >
-              <Text style={styles.closeButtonText}>Got it</Text>
-            </TouchableOpacity>
+              <ThemedText style={styles.tooltipContent}>{content || ''}</ThemedText>
+            </ScrollView>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -90,6 +92,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   tooltipContainer: {
+    position: 'relative',
     borderRadius: 16,
     padding: 24,
     maxWidth: Dimensions.get('window').width * 0.85,
@@ -103,6 +106,29 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 16,
   },
+  closeX: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    zIndex: 1,
+  },
+  closeXButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeXText: {
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  scrollView: {
+    flex: 1,
+    maxHeight: Dimensions.get('window').height * 0.6,
+    marginVertical: 8,
+  },
   tooltipTitle: {
     fontSize: 20,
     fontWeight: '700',
@@ -113,17 +139,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     textAlign: 'left',
-  },
-  closeButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  closeButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

@@ -5,7 +5,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { ThemedText } from './ThemedText';
 import { databaseService, DailyEntry } from '../services/database';
 import { Colors } from '../constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import useColorScheme from '@/hooks/useColorScheme';
 import { calculateFlowState, isInFlowState, getFlowStateColor, getEnergyColor, getFocusColor, getActionColor } from '../utils/flowState';
 import { InfoTooltip } from './InfoTooltip';
 import { getEnergyScaleGuidance, getFocusScaleGuidance, getGeneralScaleGuidance } from '../utils/scaleGuidance';
