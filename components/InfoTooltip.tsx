@@ -3,6 +3,7 @@ import { TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, View } fro
 import { ThemedText } from './ThemedText';
 import { Colors } from '../constants/Colors';
 import useColorScheme from '@/hooks/useColorScheme';
+import { createShadowStyle } from '../utils/shadowUtils';
 
 interface InfoTooltipProps {
   title: string;
@@ -98,14 +99,16 @@ const styles = StyleSheet.create({
     padding: 24,
     maxWidth: Dimensions.get('window').width * 0.85,
     maxHeight: Dimensions.get('window').height * 0.75,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 16,
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 8,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 16,
+      elevation: 16,
+    }),
   },
   closeX: {
     position: 'absolute',

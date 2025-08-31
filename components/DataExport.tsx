@@ -7,6 +7,7 @@ import { databaseService } from '../services/database';
 import { Colors } from '../constants/Colors';
 import useColorScheme from '@/hooks/useColorScheme';
 import { getActionColor } from '../utils/flowState';
+import { createShadowStyle } from '../utils/shadowUtils';
 
 interface DataExportProps {
   onClose?: () => void;
@@ -639,14 +640,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 6,
+    }),
   },
   exportButtonText: {
     fontSize: 18,

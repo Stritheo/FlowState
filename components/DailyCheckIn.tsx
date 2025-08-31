@@ -10,6 +10,7 @@ import { calculateFlowState, isInFlowState, getFlowStateColor, getEnergyColor, g
 import { InfoTooltip } from './InfoTooltip';
 import { getEnergyScaleGuidance, getFocusScaleGuidance, getGeneralScaleGuidance } from '../utils/scaleGuidance';
 import { getCurrentDateInAustralia, formatDateForDisplay, isToday, AUSTRALIA_TIMEZONE } from '../utils/dateUtils';
+import { createShadowStyle } from '../utils/shadowUtils';
 
 interface DailyCheckInProps {
   date?: string;
@@ -164,11 +165,13 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
                 currentLevel === level && {
                   backgroundColor: colors[colorKey],
                   borderColor: colors[colorKey],
-                  shadowColor: colors[colorKey],
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 8,
+                  ...createShadowStyle({
+                    shadowColor: colors[colorKey],
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 8,
+                  }),
                 }
               ]}
               onPress={() => {
@@ -262,27 +265,22 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
 
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView 
-        style={styles.keyboardAvoidingView} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={0}
-      >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <ScrollView 
-            style={styles.scrollView}
-            contentContainerStyle={[
-              styles.scrollContainer, 
-              { 
-                paddingTop: Math.max(insets.top, 20),
-                paddingBottom: 100 + (insets.bottom || 20)
-              }
-            ]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            bounces={true}
-            alwaysBounceVertical={true}
-            removeClippedSubviews={false}
-          >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContainer, 
+            { 
+              paddingTop: Math.max(insets.top, 20),
+              paddingBottom: 120 + (insets.bottom || 20)
+            }
+          ]}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
+          bounces={true}
+          alwaysBounceVertical={true}
+          nestedScrollEnabled={true}
+        >
             <View style={styles.titleContainer}>
               <View style={styles.titleRow}>
                 <ThemedText style={styles.title}>Check-In</ThemedText>
@@ -365,36 +363,41 @@ Getting started: Use the sliders below to record your current energy and focus l
                 placeholderTextColor={colors.textPlaceholder}
               />
             </View>
-          </ScrollView>
-        </TouchableWithoutFeedback>
-        
-        <View style={[
-          styles.buttonContainer, 
-          { 
-            paddingBottom: Math.max((insets.bottom || 0) + 20, 40),
-            marginBottom: 0
-          }
-        ]}>
-          <Animated.View style={{ transform: [{ scale: saveButtonScale }] }}>
-            <TouchableOpacity
-              style={[
-                styles.saveButton, 
-                { backgroundColor: colors[getActionColor()] },
-                isLoading && { backgroundColor: colors.subtle }
-              ]}
-              onPress={() => {
-                animateButtonPress(saveButtonScale);
-                handleSave();
-              }}
-              disabled={isLoading}
-            >
-              <ThemedText style={[styles.saveButtonText, { color: '#FFFFFF' }]}>
-                {isLoading ? 'Saving...' : existingEntry ? 'Update Check-In' : 'Save Check-In'}
-              </ThemedText>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      </KeyboardAvoidingView>
+          
+          {/* Save Button at bottom of ScrollView */}
+          <KeyboardAvoidingView 
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={0}
+          >
+            <View style={[
+              styles.saveButtonInlineContainer, 
+              { 
+                paddingBottom: Math.max((insets.bottom || 0) + 20, 40),
+                marginTop: 20
+              }
+            ]}>
+              <Animated.View style={{ transform: [{ scale: saveButtonScale }] }}>
+                <TouchableOpacity
+                  style={[
+                    styles.saveButton, 
+                    { backgroundColor: colors[getActionColor()] },
+                    isLoading && { backgroundColor: colors.subtle }
+                  ]}
+                  onPress={() => {
+                    animateButtonPress(saveButtonScale);
+                    handleSave();
+                  }}
+                  disabled={isLoading}
+                >
+                  <ThemedText style={[styles.saveButtonText, { color: '#FFFFFF' }]}>
+                    {isLoading ? 'Saving...' : existingEntry ? 'Update Check-In' : 'Save Check-In'}
+                  </ThemedText>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+          </KeyboardAvoidingView>
+        </ScrollView>
+      </TouchableWithoutFeedback>
       
       {showDatePicker && (
         <DateTimePicker
@@ -412,9 +415,6 @@ Getting started: Use the sliders below to record your current energy and focus l
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-  },
-  keyboardAvoidingView: {
     flex: 1,
   },
   scrollView: {
@@ -448,14 +448,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    }),
   },
   dateContent: {
     flexDirection: 'column',
@@ -575,38 +577,25 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     minHeight: 100,
   },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
+  saveButtonInlineContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    backgroundColor: 'rgba(248, 250, 252, 0.98)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(226, 232, 240, 0.5)',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
   },
   saveButton: {
     paddingVertical: 18,
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 6,
+    }),
   },
   saveButtonText: {
     fontSize: 18,
@@ -622,14 +611,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 25,
     borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 4,
+    }),
   },
   flowStateText: {
     fontSize: 18,

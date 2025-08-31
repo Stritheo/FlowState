@@ -1,4 +1,5 @@
 import * as SQLite from 'expo-sqlite';
+import { Platform } from 'react-native';
 
 export interface DailyEntry {
   id?: number;
@@ -15,11 +16,23 @@ export interface DailyEntry {
 
 class DatabaseService {
   private db: SQLite.SQLiteDatabase | null = null;
+  private isWeb: boolean = Platform.OS === 'web';
 
   async init(): Promise<void> {
-    this.db = await SQLite.openDatabaseAsync('flowstate.db');
-    await this.createTables();
-    await this.migrateDatabase();
+    if (this.isWeb) {
+      // For web, we'll use localStorage - no SQLite initialization needed
+      console.log('Database initialized for web using localStorage');
+      return;
+    }
+    
+    try {
+      this.db = await SQLite.openDatabaseAsync('flowstate.db');
+      await this.createTables();
+      await this.migrateDatabase();
+    } catch (error) {
+      console.error('SQLite initialization failed, falling back to localStorage:', error);
+      this.isWeb = true; // Fallback to web mode
+    }
   }
 
   private async createTables(): Promise<void> {
@@ -72,7 +85,44 @@ class DatabaseService {
     }
   }
 
+  // Web storage helpers
+  private getEntriesFromStorage(): DailyEntry[] {
+    if (typeof localStorage === 'undefined') return [];
+    try {
+      const stored = localStorage.getItem('flowstate_entries');
+      return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+      console.error('Failed to parse stored entries:', error);
+      return [];
+    }
+  }
+
+  private saveEntriesToStorage(entries: DailyEntry[]): void {
+    if (typeof localStorage === 'undefined') return;
+    try {
+      localStorage.setItem('flowstate_entries', JSON.stringify(entries));
+    } catch (error) {
+      console.error('Failed to save entries to storage:', error);
+    }
+  }
+
   async addDailyEntry(entry: Omit<DailyEntry, 'id' | 'created_at'>): Promise<number> {
+    if (this.isWeb) {
+      const entries = this.getEntriesFromStorage();
+      const id = Date.now();
+      const newEntry: DailyEntry = {
+        ...entry,
+        id,
+        created_at: new Date().toISOString(),
+      };
+      
+      // Remove existing entry with same date
+      const filteredEntries = entries.filter(e => e.date !== entry.date);
+      filteredEntries.push(newEntry);
+      this.saveEntriesToStorage(filteredEntries);
+      return id;
+    }
+    
     if (!this.db) throw new Error('Database not initialized');
 
     const result = await this.db.runAsync(
@@ -95,6 +145,11 @@ class DatabaseService {
   }
 
   async getDailyEntry(date: string): Promise<DailyEntry | null> {
+    if (this.isWeb) {
+      const entries = this.getEntriesFromStorage();
+      return entries.find(e => e.date === date) || null;
+    }
+    
     if (!this.db) throw new Error('Database not initialized');
 
     const result = await this.db.getFirstAsync<DailyEntry>(
@@ -127,6 +182,16 @@ class DatabaseService {
   }
 
   async updateDailyEntry(date: string, entry: Partial<Pick<DailyEntry, 'energy_level' | 'focus_level' | 'sleep_quality' | 'hours_slept' | 'caffeine_intake' | 'alcohol_intake' | 'notes'>>): Promise<void> {
+    if (this.isWeb) {
+      const entries = this.getEntriesFromStorage();
+      const existingIndex = entries.findIndex(e => e.date === date);
+      if (existingIndex !== -1) {
+        entries[existingIndex] = { ...entries[existingIndex], ...entry };
+        this.saveEntriesToStorage(entries);
+      }
+      return;
+    }
+    
     if (!this.db) throw new Error('Database not initialized');
 
     const fields = [];

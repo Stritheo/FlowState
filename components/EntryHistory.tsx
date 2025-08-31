@@ -13,6 +13,7 @@ import { InfoTooltip } from './InfoTooltip';
 import { getGeneralScaleGuidance } from '../utils/scaleGuidance';
 import { exportService, ExportOptions } from '../services/exportService';
 import { formatDateShort, getDateNDaysAgo, getDateNMonthsAgo } from '../utils/dateUtils';
+import { createShadowStyle } from '../utils/shadowUtils';
 
 type TimeRange = 'week' | 'month';
 
@@ -816,28 +817,32 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(248, 250, 252, 0.98)',
     borderTopWidth: 1,
     borderTopColor: 'rgba(226, 232, 240, 0.5)',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: -2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 8,
+    }),
   },
   floatingExportButton: {
     paddingVertical: 18,
     paddingHorizontal: 32,
     borderRadius: 12,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 6,
+    }),
   },
   floatingExportButtonText: {
     fontSize: 18,
@@ -864,13 +869,15 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 16,
     borderWidth: 1,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 6,
+    ...createShadowStyle({
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 6,
+    }),
   },
   entryHeader: {
     marginBottom: 12,
@@ -898,14 +905,16 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.3,
+      shadowRadius: 4,
+      elevation: 4,
+    }),
   },
   levelValue: {
     fontSize: 18,
@@ -1005,14 +1014,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeRangeTabActive: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 2,
+    }),
   },
   timeRangeTabText: {
     fontSize: 16,
@@ -1129,13 +1140,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
     borderWidth: 1,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    ...createShadowStyle({
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    }),
   },
   timelineHeader: {
     flexDirection: 'row',
