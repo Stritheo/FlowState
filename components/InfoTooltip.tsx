@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, View } from 'react-native';
+import { TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { Colors } from '../constants/Colors';
 import useColorScheme from '@/hooks/useColorScheme';
@@ -58,9 +58,10 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
             <ThemedText style={styles.tooltipTitle}>{title || ''}</ThemedText>
             <ScrollView 
               style={styles.scrollView}
-              contentContainerStyle={{ paddingBottom: 20 }}
+              contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
               showsVerticalScrollIndicator={true}
               bounces={true}
+              nestedScrollEnabled={true}
             >
               <ThemedText style={styles.tooltipContent}>{content || ''}</ThemedText>
             </ScrollView>

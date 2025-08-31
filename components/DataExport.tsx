@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet, ScrollView, Switch, Animated, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, Alert, StyleSheet, ScrollView, Switch, Animated, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ThemedText } from './ThemedText';
 import { exportService, ExportOptions } from '../services/exportService';
