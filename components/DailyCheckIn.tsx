@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, TextInput, TouchableOpacity, Alert, StyleSheet, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, ScrollView, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -34,6 +34,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
   const [existingEntry, setExistingEntry] = useState<DailyEntry | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showDebugLogger, setShowDebugLogger] = useState(false);
+  const lastContentHeightRef = useRef(0);
   
   // Animation values
   const buttonScale = new Animated.Value(1);
@@ -80,7 +81,10 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      if (existingEntry) {
+      // Always check for existing entry first to avoid UNIQUE constraint errors
+      const currentEntry = await databaseService.getDailyEntry(selectedDate);
+      
+      if (currentEntry) {
         await databaseService.updateDailyEntry(selectedDate, {
           energy_level: energyLevel,
           focus_level: focusLevel,
@@ -106,7 +110,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
 
       Alert.alert('Success', 'Daily check-in saved!');
     } catch (error) {
-      console.error('Failed to save entry:', error);
+      logError('data', 'Failed to save entry', 'DailyCheckIn', { selectedDate }, error as Error);
       Alert.alert('Error', 'Failed to save daily check-in');
     } finally {
       setIsLoading(false);
@@ -270,7 +274,11 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
 
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView 
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={0}
+    >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView 
           style={styles.scrollView}
@@ -284,31 +292,37 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
           showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
           bounces={true}
-          alwaysBounceVertical={true}
-          nestedScrollEnabled={true}
-          onScroll={(event) => {
+          alwaysBounceVertical={false}
+          onScroll={__DEV__ ? (event) => {
             const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-            logScrollEvent('DailyCheckIn', 'main_scroll', {
-              offsetY: contentOffset.y,
-              contentHeight: contentSize.height,
-              visibleHeight: layoutMeasurement.height,
-              scrollableHeight: contentSize.height - layoutMeasurement.height,
-              scrollProgress: contentOffset.y / Math.max(1, contentSize.height - layoutMeasurement.height)
-            });
-          }}
-          onContentSizeChange={(width, height) => {
-            logScrollEvent('DailyCheckIn', 'content_size_change', {
-              contentWidth: width,
-              contentHeight: height
-            });
-          }}
-          onLayout={(event) => {
+            // Only log major scroll events to reduce spam
+            if (Math.abs(contentOffset.y % 50) < 5) {
+              logScrollEvent('DailyCheckIn', 'main_scroll', {
+                offsetY: contentOffset.y,
+                contentHeight: contentSize.height,
+                visibleHeight: layoutMeasurement.height,
+                scrollProgress: contentOffset.y / Math.max(1, contentSize.height - layoutMeasurement.height)
+              });
+            }
+          } : undefined}
+          onContentSizeChange={__DEV__ ? (width, height) => {
+            // Only log if size changes significantly (by more than 50px to reduce noise)
+            const lastHeight = lastContentHeightRef.current || 0;
+            if (Math.abs(height - lastHeight) > 50) {
+              lastContentHeightRef.current = height;
+              logScrollEvent('DailyCheckIn', 'content_size_change', {
+                contentWidth: width,
+                contentHeight: height
+              });
+            }
+          } : undefined}
+          onLayout={__DEV__ ? (event) => {
             const { width, height } = event.nativeEvent.layout;
             logScrollEvent('DailyCheckIn', 'scroll_view_layout', {
               scrollViewWidth: width,
               scrollViewHeight: height
             });
-          }}
+          } : undefined}
         >
             <View style={styles.titleContainer}>
               <View style={styles.titleRow}>
@@ -405,37 +419,32 @@ Getting started: Use the sliders below to record your current energy and focus l
             </View>
           
           {/* Save Button at bottom of ScrollView */}
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={0}
-          >
-            <View style={[
-              styles.saveButtonInlineContainer, 
-              { 
-                paddingBottom: Math.max((insets.bottom || 0) + 20, 40),
-                marginTop: 20
-              }
-            ]}>
-              <Animated.View style={{ transform: [{ scale: saveButtonScale }] }}>
-                <TouchableOpacity
-                  style={[
-                    styles.saveButton, 
-                    { backgroundColor: colors[getActionColor()] },
-                    isLoading && { backgroundColor: colors.subtle }
-                  ]}
-                  onPress={() => {
-                    animateButtonPress(saveButtonScale);
-                    handleSave();
-                  }}
-                  disabled={isLoading}
-                >
-                  <ThemedText style={[styles.saveButtonText, { color: '#FFFFFF' }]}>
-                    {isLoading ? 'Saving...' : existingEntry ? 'Update Check-In' : 'Save Check-In'}
-                  </ThemedText>
-                </TouchableOpacity>
-              </Animated.View>
-            </View>
-          </KeyboardAvoidingView>
+          <View style={[
+            styles.saveButtonInlineContainer, 
+            { 
+              paddingBottom: Math.max((insets.bottom || 0) + 20, 40),
+              marginTop: 20
+            }
+          ]}>
+            <Animated.View style={{ transform: [{ scale: saveButtonScale }] }}>
+              <TouchableOpacity
+                style={[
+                  styles.saveButton, 
+                  { backgroundColor: colors[getActionColor()] },
+                  isLoading && { backgroundColor: colors.subtle }
+                ]}
+                onPress={() => {
+                  animateButtonPress(saveButtonScale);
+                  handleSave();
+                }}
+                disabled={isLoading}
+              >
+                <ThemedText style={[styles.saveButtonText, { color: '#FFFFFF' }]}>
+                  {isLoading ? 'Saving...' : existingEntry ? 'Update Check-In' : 'Save Check-In'}
+                </ThemedText>
+              </TouchableOpacity>
+            </Animated.View>
+          </View>
         </ScrollView>
       </TouchableWithoutFeedback>
       
@@ -454,7 +463,7 @@ Getting started: Use the sliders below to record your current energy and focus l
         visible={showDebugLogger}
         onClose={() => setShowDebugLogger(false)}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

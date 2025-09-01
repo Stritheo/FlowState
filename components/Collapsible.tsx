@@ -100,13 +100,13 @@ export function Collapsible({ children, title, expanded, onToggle, summary }: Co
         <ThemedText type="defaultSemiBold" style={styles.title}>{title}</ThemedText>
       </TouchableOpacity>
       
-      {summary && (
+      {summary && summary.trim().length > 0 && (
         <Animated.View style={{ opacity: summaryOpacityAnim }}>
           <ThemedView style={[
             styles.summaryContainer,
             { backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.1)' }
           ]}>
-            <ThemedText style={styles.summaryText}>{summary}</ThemedText>
+            <ThemedText style={styles.summaryText}>{summary.trim()}</ThemedText>
           </ThemedView>
         </Animated.View>
       )}
