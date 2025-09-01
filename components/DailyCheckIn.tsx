@@ -11,6 +11,8 @@ import { InfoTooltip } from './InfoTooltip';
 import { getEnergyScaleGuidance, getFocusScaleGuidance, getGeneralScaleGuidance } from '../utils/scaleGuidance';
 import { getCurrentDateInAustralia, formatDateForDisplay, isToday, AUSTRALIA_TIMEZONE } from '../utils/dateUtils';
 import { createShadowStyle } from '../utils/shadowUtils';
+import { logScrollEvent, logUIInteraction, logError, logInfo } from '../utils/logger';
+import { DebugLogger } from './DebugLogger';
 
 interface DailyCheckInProps {
   date?: string;
@@ -31,6 +33,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [existingEntry, setExistingEntry] = useState<DailyEntry | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showDebugLogger, setShowDebugLogger] = useState(false);
   
   // Animation values
   const buttonScale = new Animated.Value(1);
@@ -49,6 +52,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
 
   const loadExistingEntry = async () => {
     try {
+      logInfo('data', 'Loading existing entry', 'DailyCheckIn', { selectedDate });
       const entry = await databaseService.getDailyEntry(selectedDate);
       if (entry) {
         setExistingEntry(entry);
@@ -57,6 +61,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
         setCaffeineIntake(entry.caffeine_intake || 0);
         setAlcoholIntake(entry.alcohol_intake || 0);
         setNotes(entry.notes || '');
+        logInfo('data', 'Existing entry loaded successfully', 'DailyCheckIn', { entryId: entry.id });
       } else {
         // Reset counters for new day
         setCaffeineIntake(0);
@@ -65,9 +70,10 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
         setEnergyLevel(4);
         setFocusLevel(4);
         setExistingEntry(null);
+        logInfo('data', 'No existing entry found, using defaults', 'DailyCheckIn');
       }
     } catch (error) {
-      console.error('Failed to load existing entry:', error);
+      logError('data', 'Failed to load existing entry', 'DailyCheckIn', { selectedDate }, error as Error);
     }
   };
 
@@ -280,13 +286,37 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
           bounces={true}
           alwaysBounceVertical={true}
           nestedScrollEnabled={true}
+          onScroll={(event) => {
+            const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+            logScrollEvent('DailyCheckIn', 'main_scroll', {
+              offsetY: contentOffset.y,
+              contentHeight: contentSize.height,
+              visibleHeight: layoutMeasurement.height,
+              scrollableHeight: contentSize.height - layoutMeasurement.height,
+              scrollProgress: contentOffset.y / Math.max(1, contentSize.height - layoutMeasurement.height)
+            });
+          }}
+          onContentSizeChange={(width, height) => {
+            logScrollEvent('DailyCheckIn', 'content_size_change', {
+              contentWidth: width,
+              contentHeight: height
+            });
+          }}
+          onLayout={(event) => {
+            const { width, height } = event.nativeEvent.layout;
+            logScrollEvent('DailyCheckIn', 'scroll_view_layout', {
+              scrollViewWidth: width,
+              scrollViewHeight: height
+            });
+          }}
         >
             <View style={styles.titleContainer}>
               <View style={styles.titleRow}>
                 <ThemedText style={styles.title}>Check-In</ThemedText>
-                <InfoTooltip 
-                  title="Welcome to FlowState"
-                  content="Welcome to FlowState
+                <View style={styles.titleActions}>
+                  <InfoTooltip 
+                    title="Welcome to FlowState"
+                    content="Welcome to FlowState
 
 FlowState helps you discover and maintain your optimal performance state by tracking energy and focus patterns.
 
@@ -295,8 +325,18 @@ Quick daily check-ins help identify when you're in your Flow State (both energy 
 Track patterns over time, identify your optimal zones, and export data for deeper analysis.
 
 Getting started: Use the sliders below to record your current energy and focus levels on a 1-7 scale."
-                  size={18}
-                />
+                    size={18}
+                  />
+                  {__DEV__ && (
+                    <TouchableOpacity
+                      style={[styles.debugButton, { backgroundColor: colors.subtle + '20' }]}
+                      onPress={() => setShowDebugLogger(true)}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <ThemedText style={[styles.debugButtonText, { color: colors.icon }]}>🐛</ThemedText>
+                    </TouchableOpacity>
+                  )}
+                </View>
               </View>
             </View>
             
@@ -409,6 +449,11 @@ Getting started: Use the sliders below to record your current energy and focus l
           textColor={colors.textPrimary}
         />
       )}
+      
+      <DebugLogger
+        visible={showDebugLogger}
+        onClose={() => setShowDebugLogger(false)}
+      />
     </View>
   );
 }
@@ -440,6 +485,22 @@ const styles = StyleSheet.create({
     textAlign: 'left',
     lineHeight: 40,
     flex: 1,
+  },
+  titleActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  debugButton: {
+    marginLeft: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  debugButtonText: {
+    fontSize: 14,
   },
   dateContainer: {
     marginBottom: 24,

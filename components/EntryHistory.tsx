@@ -14,6 +14,7 @@ import { getGeneralScaleGuidance } from '../utils/scaleGuidance';
 import { exportService, ExportOptions } from '../services/exportService';
 import { formatDateShort, getDateNDaysAgo, getDateNMonthsAgo } from '../utils/dateUtils';
 import { createShadowStyle } from '../utils/shadowUtils';
+import { logScrollEvent, logUIInteraction, logError, logInfo } from '../utils/logger';
 
 type TimeRange = 'week' | 'month';
 
@@ -538,6 +539,16 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
               showsHorizontalScrollIndicator={true}
               snapToInterval={snapInterval}
               decelerationRate="fast"
+              onScroll={(event) => {
+                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                logScrollEvent('EntryHistory', 'chart_horizontal_scroll', {
+                  offsetX: contentOffset.x,
+                  contentWidth: contentSize.width,
+                  visibleWidth: layoutMeasurement.width,
+                  scrollableWidth: contentSize.width - layoutMeasurement.width,
+                  scrollProgress: contentOffset.x / Math.max(1, contentSize.width - layoutMeasurement.width)
+                });
+              }}
             >
               {renderLineChart(weeklyData, Math.max(chartWidth, weeklyData.length * 50))}
             </ScrollView>
@@ -641,6 +652,29 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
           paddingBottom: 60 + (insets.bottom || 20)
         }}
         showsVerticalScrollIndicator={false}
+        onScroll={(event) => {
+          const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+          logScrollEvent('EntryHistory', 'main_scroll', {
+            offsetY: contentOffset.y,
+            contentHeight: contentSize.height,
+            visibleHeight: layoutMeasurement.height,
+            scrollableHeight: contentSize.height - layoutMeasurement.height,
+            scrollProgress: contentOffset.y / Math.max(1, contentSize.height - layoutMeasurement.height)
+          });
+        }}
+        onContentSizeChange={(width, height) => {
+          logScrollEvent('EntryHistory', 'content_size_change', {
+            contentWidth: width,
+            contentHeight: height
+          });
+        }}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          logScrollEvent('EntryHistory', 'scroll_view_layout', {
+            scrollViewWidth: width,
+            scrollViewHeight: height
+          });
+        }}
       >
         {renderTimeRangeSelector()}
         {renderTrendChart()}

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, View } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { Colors } from '../constants/Colors';
 import useColorScheme from '@/hooks/useColorScheme';
 import { createShadowStyle } from '../utils/shadowUtils';
+import { logScrollEvent, logUIInteraction, logError } from '../utils/logger';
 
 interface InfoTooltipProps {
   title: string;
@@ -15,12 +16,16 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
   const [showModal, setShowModal] = useState(false);
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const scrollViewRef = useRef<ScrollView>(null);
 
   return (
     <>
       <TouchableOpacity
         style={[styles.infoButton, { backgroundColor: colors.subtle + '20' }]}
-        onPress={() => setShowModal(true)}
+        onPress={() => {
+          logUIInteraction('InfoTooltip', 'open_modal', { title });
+          setShowModal(true);
+        }}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         accessibilityLabel={`Info about ${title}`}
         accessibilityRole="button"
@@ -38,7 +43,10 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setShowModal(false)}
+          onPress={() => {
+            logUIInteraction('InfoTooltip', 'close_modal_overlay', { title });
+            setShowModal(false);
+          }}
         >
           <TouchableOpacity 
             style={[styles.tooltipContainer, { backgroundColor: colors.cardBackground }]}
@@ -47,7 +55,10 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
           >
             <View style={styles.closeX}>
               <TouchableOpacity
-                onPress={() => setShowModal(false)}
+                onPress={() => {
+                  logUIInteraction('InfoTooltip', 'close_modal_x_button', { title });
+                  setShowModal(false);
+                }}
                 style={styles.closeXButton}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 accessibilityLabel="Close tooltip"
@@ -58,11 +69,50 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
             </View>
             <ThemedText style={styles.tooltipTitle}>{title || ''}</ThemedText>
             <ScrollView 
+              ref={scrollViewRef}
               style={styles.scrollView}
               contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
               showsVerticalScrollIndicator={true}
               bounces={true}
               nestedScrollEnabled={true}
+              onScroll={(event) => {
+                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                logScrollEvent('InfoTooltip', 'scroll', {
+                  title,
+                  offsetY: contentOffset.y,
+                  contentHeight: contentSize.height,
+                  visibleHeight: layoutMeasurement.height,
+                  scrollableHeight: contentSize.height - layoutMeasurement.height,
+                  scrollProgress: contentOffset.y / Math.max(1, contentSize.height - layoutMeasurement.height)
+                });
+              }}
+              onContentSizeChange={(width, height) => {
+                logScrollEvent('InfoTooltip', 'content_size_change', {
+                  title,
+                  contentWidth: width,
+                  contentHeight: height
+                });
+              }}
+              onLayout={(event) => {
+                const { width, height } = event.nativeEvent.layout;
+                logScrollEvent('InfoTooltip', 'scroll_view_layout', {
+                  title,
+                  scrollViewWidth: width,
+                  scrollViewHeight: height
+                });
+              }}
+              onScrollBeginDrag={() => {
+                logScrollEvent('InfoTooltip', 'scroll_begin_drag', { title });
+              }}
+              onScrollEndDrag={() => {
+                logScrollEvent('InfoTooltip', 'scroll_end_drag', { title });
+              }}
+              onMomentumScrollBegin={() => {
+                logScrollEvent('InfoTooltip', 'momentum_scroll_begin', { title });
+              }}
+              onMomentumScrollEnd={() => {
+                logScrollEvent('InfoTooltip', 'momentum_scroll_end', { title });
+              }}
             >
               <ThemedText style={styles.tooltipContent}>{content || ''}</ThemedText>
             </ScrollView>
