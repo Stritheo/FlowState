@@ -177,7 +177,13 @@ if (__DEV__) {
     // Check if it's a React error or warning
     const message = args.join(' ');
     
-    if (message.includes('Warning:') || message.includes('Error:')) {
+    // Skip Metro bundler errors and our own logged messages to prevent infinite loops
+    if ((message.includes('Warning:') || message.includes('Error:')) && 
+        !message.includes('ENOENT') && 
+        !message.includes('unknown') && 
+        !message.includes('Console error detected') &&
+        !message.includes('getCodeFrame') &&
+        !message.includes('_symbolicate')) {
       logger.error('general', 'Console error detected', undefined, { args });
     }
     
@@ -186,7 +192,10 @@ if (__DEV__) {
 
   console.warn = (...args) => {
     const message = args.join(' ');
-    logger.warn('general', 'Console warning detected', undefined, { args });
+    // Skip logging our own warning messages to prevent infinite loops
+    if (!message.includes('Console warning detected') && !message.includes('shadow*')) {
+      logger.warn('general', 'Console warning detected', undefined, { args });
+    }
     originalWarn.apply(console, args);
   };
 }

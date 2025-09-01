@@ -15,4 +15,23 @@ config.transformer = {
 // For web platform, make sure wasm files are treated as assets
 config.resolver.platforms = ['native', 'web', 'ios', 'android'];
 
+// Disable source maps temporarily to resolve Metro bundler "unknown" file errors
+config.transformer.minifierConfig = {
+  ...config.transformer.minifierConfig,
+  keep_fnames: true,
+  mangle: {
+    keep_fnames: true,
+  },
+};
+
+// Disable source maps for development to prevent Metro errors
+if (process.env.NODE_ENV === 'development') {
+  config.transformer.getTransformOptions = async () => ({
+    transform: {
+      experimentalImportSupport: false,
+      inlineRequires: false,
+    },
+  });
+}
+
 module.exports = config;

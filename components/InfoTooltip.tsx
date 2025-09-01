@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, View } from 'react-native';
+import { TouchableOpacity, Modal, StyleSheet, Dimensions, ScrollView, View, SafeAreaView, Platform } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { Colors } from '../constants/Colors';
 import useColorScheme from '@/hooks/useColorScheme';
@@ -40,19 +40,20 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
         animationType="fade"
         onRequestClose={() => setShowModal(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => {
-            logUIInteraction('InfoTooltip', 'close_modal_overlay', { title });
-            setShowModal(false);
-          }}
-        >
-          <TouchableOpacity 
-            style={[styles.tooltipContainer, { backgroundColor: colors.cardBackground }]}
+        <SafeAreaView style={styles.modalSafeArea}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
             activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
+            onPress={() => {
+              logUIInteraction('InfoTooltip', 'close_modal_overlay', { title });
+              setShowModal(false);
+            }}
           >
+            <TouchableOpacity 
+              style={[styles.tooltipContainer, { backgroundColor: colors.cardBackground }]}
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+            >
             <View style={styles.closeX}>
               <TouchableOpacity
                 onPress={() => {
@@ -71,9 +72,11 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
             <ScrollView 
               ref={scrollViewRef}
               style={styles.scrollView}
-              contentContainerStyle={{ flexGrow: 1, paddingBottom: 20 }}
+              contentContainerStyle={styles.scrollViewContent}
               showsVerticalScrollIndicator={true}
+              scrollIndicatorInsets={Platform.OS === 'ios' ? { right: 1 } : undefined}
               bounces={true}
+              alwaysBounceVertical={true}
               nestedScrollEnabled={true}
               onScroll={(event) => {
                 const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
@@ -118,6 +121,7 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
             </ScrollView>
           </TouchableOpacity>
         </TouchableOpacity>
+      </SafeAreaView>
       </Modal>
     </>
   );
@@ -136,19 +140,22 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     opacity: 0.6,
   },
-  modalOverlay: {
+  modalSafeArea: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalOverlay: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   tooltipContainer: {
-    position: 'relative',
     borderRadius: 16,
     padding: 24,
     maxWidth: Dimensions.get('window').width * 0.85,
-    maxHeight: Dimensions.get('window').height * 0.75,
+    maxHeight: Dimensions.get('window').height * 0.8,
+    minHeight: 200,
     ...createShadowStyle({
       shadowColor: '#000',
       shadowOffset: {
@@ -180,14 +187,18 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    maxHeight: Dimensions.get('window').height * 0.6,
     marginVertical: 8,
+  },
+  scrollViewContent: {
+    paddingBottom: 30,
+    paddingHorizontal: 4,
   },
   tooltipTitle: {
     fontSize: 20,
     fontWeight: '700',
     marginBottom: 12,
     textAlign: 'center',
+    paddingTop: 20,
   },
   tooltipContent: {
     fontSize: 16,

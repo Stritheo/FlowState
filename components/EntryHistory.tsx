@@ -882,7 +882,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
                     onPress: handleDirectExport,
                   },
                   {
-                    text: 'Advanced Options...',
+                    text: 'Advanced Export Options',
                     onPress: () => setShowExport(true),
                   },
                   {

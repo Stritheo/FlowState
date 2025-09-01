@@ -303,6 +303,11 @@ export function DataExport({ onClose }: DataExportProps) {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
+          {onClose && (
+            <TouchableOpacity style={styles.closeButton} onPress={onClose}>
+              <ThemedText style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</ThemedText>
+            </TouchableOpacity>
+          )}
           <ThemedText style={styles.title}>Export Your Data</ThemedText>
           <ThemedText style={styles.subtitle}>Generate analysis-ready CSV reports</ThemedText>
         </View>
@@ -495,6 +500,23 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 24,
     alignItems: 'center',
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+  closeButtonText: {
+    fontSize: 18,
+    fontWeight: '600',
   },
   title: {
     fontSize: 24,
