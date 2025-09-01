@@ -1,3 +1,9 @@
+// Store original console methods to prevent circular calls
+const originalLog = console.log;
+const originalInfo = console.info;
+const originalWarn = console.warn;
+const originalError = console.error;
+
 export interface LogEntry {
   timestamp: string;
   level: 'debug' | 'info' | 'warn' | 'error';
@@ -44,17 +50,17 @@ class Logger {
       
       switch (entry.level) {
         case 'error':
-          console.error(message, entry.data || '');
-          if (entry.stackTrace) console.error('Stack:', entry.stackTrace);
+          originalError(message, entry.data || '');
+          if (entry.stackTrace) originalError('Stack:', entry.stackTrace);
           break;
         case 'warn':
-          console.warn(message, entry.data || '');
+          originalWarn(message, entry.data || '');
           break;
         case 'info':
-          console.info(message, entry.data || '');
+          originalInfo(message, entry.data || '');
           break;
         case 'debug':
-          console.log(message, entry.data || '');
+          originalLog(message, entry.data || '');
           break;
       }
     }
@@ -167,7 +173,6 @@ export const logger = new Logger();
 
 // Hook to capture unhandled errors
 if (__DEV__) {
-  const originalError = console.error;
   console.error = (...args) => {
     // Check if it's a React error or warning
     const message = args.join(' ');
@@ -179,7 +184,6 @@ if (__DEV__) {
     originalError.apply(console, args);
   };
 
-  const originalWarn = console.warn;
   console.warn = (...args) => {
     const message = args.join(' ');
     logger.warn('general', 'Console warning detected', undefined, { args });

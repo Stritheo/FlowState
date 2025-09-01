@@ -19,6 +19,16 @@ export function Collapsible({ children, title, expanded, onToggle, summary }: Co
   const [contentHeight, setContentHeight] = useState(0);
   const theme = useColorScheme() ?? 'light';
   
+  // Debug code for fix verification
+  console.log('[FIX_VERIFICATION] Collapsible rendering with:', {
+    title: title,
+    titleType: typeof title,
+    summary: summary,
+    summaryType: typeof summary,
+    expanded: expanded,
+    hasChildren: !!children
+  });
+  
   const heightAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const summaryOpacityAnim = useRef(new Animated.Value(1)).current;
@@ -64,7 +74,7 @@ export function Collapsible({ children, title, expanded, onToggle, summary }: Co
           useNativeDriver: false,
         }),
         Animated.timing(summaryOpacityAnim, {
-          toValue: summary ? 1 : 0,
+          toValue: (summary && summary.trim().length > 0) ? 1 : 0,
           duration: 150,
           delay: 150,
           useNativeDriver: false,
@@ -100,16 +110,18 @@ export function Collapsible({ children, title, expanded, onToggle, summary }: Co
         <ThemedText type="defaultSemiBold" style={styles.title}>{title}</ThemedText>
       </TouchableOpacity>
       
-      {summary && summary.trim().length > 0 && (
+      {summary && summary.trim().length > 0 ? (
         <Animated.View style={{ opacity: summaryOpacityAnim }}>
           <ThemedView style={[
             styles.summaryContainer,
             { backgroundColor: theme === 'light' ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.1)' }
           ]}>
-            <ThemedText style={styles.summaryText}>{summary.trim()}</ThemedText>
+            <ThemedText style={styles.summaryText}>
+              {String(summary).trim()}
+            </ThemedText>
           </ThemedView>
         </Animated.View>
-      )}
+      ) : null}
       
       <Animated.View 
         style={[

@@ -29,6 +29,7 @@ interface EntryHistoryProps {
 }
 
 export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
+  const DEBUG_MODE = true;
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
@@ -194,13 +195,32 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
   };
 
   const generateDailySummary = (entries: DailyEntry[]) => {
-    if (entries.length === 0) return '';
+    if (DEBUG_MODE) console.log('[DEBUG] generateDailySummary called with entries:', entries.length);
+    
+    if (entries.length === 0) {
+      if (DEBUG_MODE) console.log('[DEBUG] generateDailySummary returning empty string');
+      return '';
+    }
     
     const avgEnergy = (entries.reduce((sum, entry) => sum + entry.energy_level, 0) / entries.length).toFixed(1);
     const avgFocus = (entries.reduce((sum, entry) => sum + entry.focus_level, 0) / entries.length).toFixed(1);
     const flowEntries = entries.filter(entry => isInFlowState(entry.energy_level, entry.focus_level)).length;
     
-    return `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} • Avg Energy: ${avgEnergy} • Avg Focus: ${avgFocus} • Flow: ${flowEntries}/${entries.length}`;
+    if (DEBUG_MODE) {
+      console.log('[DEBUG] generateDailySummary variables:');
+      console.log('  - entries.length:', entries.length, typeof entries.length);
+      console.log('  - avgEnergy:', avgEnergy, typeof avgEnergy);
+      console.log('  - avgFocus:', avgFocus, typeof avgFocus);
+      console.log('  - flowEntries:', flowEntries, typeof flowEntries);
+    }
+    
+    const summary = `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} • Avg Energy: ${avgEnergy} • Avg Focus: ${avgFocus} • Flow: ${flowEntries}/${entries.length}`;
+    
+    if (DEBUG_MODE) {
+      console.log('[DEBUG] generateDailySummary result:', summary, typeof summary);
+    }
+    
+    return summary;
   };
 
 
@@ -610,6 +630,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
   }, [isLoading, entries.length]);
 
   if (isLoading) {
+    if (DEBUG_MODE) console.log('[DEBUG] Rendering loading state');
     return (
       <ThemedView style={styles.container}>
         <View style={styles.header}>
@@ -621,6 +642,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
   }
 
   if (entries.length === 0) {
+    if (DEBUG_MODE) console.log('[DEBUG] Rendering empty state');
     return (
       <ThemedView style={styles.container}>
         <View style={styles.header}>
@@ -629,6 +651,14 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
         <ThemedText style={styles.emptyText}>No entries yet. Start tracking your daily clarity!</ThemedText>
       </ThemedView>
     );
+  }
+
+  if (DEBUG_MODE) {
+    console.log('[DEBUG] Rendering main component with:', {
+      entriesCount: entries.length,
+      dailyGroupsCount: dailyGroups.length,
+      timeRange: timeRange
+    });
   }
 
   return (
@@ -679,71 +709,139 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
         {renderTimeRangeSelector()}
         {renderTrendChart()}
         
-        {dailyGroups.map((group, groupIndex) => (
-          <Animated.View 
-            key={group.date}
-            style={{
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }],
-            }}
-          >
-            <Collapsible
-              title={formatDate(group.date)}
-              expanded={!group.isCollapsed}
-              onToggle={() => toggleDayCollapse(group.date)}
-              summary={generateDailySummary(group.entries)}
-            >
-              {group.entries.map((entry, entryIndex) => (
-                <TouchableOpacity
-                  key={entry.id || `${entry.date}-${entryIndex}`}
-                  style={[
-                    styles.timelineEntry,
-                    { 
-                      backgroundColor: colors.cardBackground,
-                      borderColor: colors.border,
-                      marginBottom: entryIndex === group.entries.length - 1 ? 0 : 8,
-                    }
-                  ]}
-                  onPress={() => onEntrySelect?.(entry)}
+        {dailyGroups.map((group, groupIndex) => {
+          if (DEBUG_MODE) {
+            console.log(`[DEBUG] Rendering daily group ${groupIndex}:`, {
+              date: group.date,
+              entriesCount: group.entries.length,
+              isCollapsed: group.isCollapsed
+            });
+          }
+
+          const formattedDate = formatDate(group.date);
+          const summary = generateDailySummary(group.entries);
+          
+          if (DEBUG_MODE) {
+            console.log('[DEBUG] Collapsible props:', {
+              title: formattedDate,
+              titleType: typeof formattedDate,
+              expanded: !group.isCollapsed,
+              expandedType: typeof (!group.isCollapsed),
+              summary: summary,
+              summaryType: typeof summary,
+              summaryLength: summary?.length || 0
+            });
+          }
+
+          try {
+            return (
+              <Animated.View 
+                key={group.date}
+                style={{
+                  opacity: fadeAnim,
+                  transform: [{ translateY: slideAnim }],
+                }}
+              >
+                <Collapsible
+                  title={formattedDate}
+                  expanded={!group.isCollapsed}
+                  onToggle={() => toggleDayCollapse(group.date)}
+                  summary={summary}
                 >
-                  <View style={styles.timelineHeader}>
-                    <ThemedText style={[styles.timelineTime, { color: colors.textPrimary }]}>
-                      {formatTimestamp(entry.created_at)} - Energy: {entry.energy_level || 0}, Focus: {entry.focus_level || 0}
-                    </ThemedText>
-                    {isInFlowState(entry.energy_level, entry.focus_level) && (
-                      <View style={[styles.flowBadge, { backgroundColor: colors.flowActive }]}>
-                        <ThemedText style={styles.flowBadgeText}>FLOW</ThemedText>
+              {group.entries.map((entry, entryIndex) => {
+                if (DEBUG_MODE) {
+                  console.log(`[DEBUG] Rendering entry ${entryIndex} in group ${group.date}:`, {
+                    entryId: entry.id,
+                    energyLevel: entry.energy_level,
+                    focusLevel: entry.focus_level,
+                    createdAt: entry.created_at,
+                    notes: entry.notes ? entry.notes.substring(0, 50) + '...' : 'none'
+                  });
+                }
+
+                const timestamp = formatTimestamp(entry.created_at);
+                const energyLevel = entry.energy_level || 0;
+                const focusLevel = entry.focus_level || 0;
+                
+                if (DEBUG_MODE) {
+                  console.log('[DEBUG] Entry template literal variables:', {
+                    timestamp: timestamp,
+                    timestampType: typeof timestamp,
+                    energyLevel: energyLevel,
+                    energyLevelType: typeof energyLevel,
+                    focusLevel: focusLevel,
+                    focusLevelType: typeof focusLevel
+                  });
+                }
+
+                try {
+                  return (
+                    <TouchableOpacity
+                      key={entry.id || `${entry.date}-${entryIndex}`}
+                      style={[
+                        styles.timelineEntry,
+                        { 
+                          backgroundColor: colors.cardBackground,
+                          borderColor: colors.border,
+                          marginBottom: entryIndex === group.entries.length - 1 ? 0 : 8,
+                        }
+                      ]}
+                      onPress={() => onEntrySelect?.(entry)}
+                    >
+                      <View style={styles.timelineHeader}>
+                        <ThemedText style={[styles.timelineTime, { color: colors.textPrimary }]}>
+                          {`${timestamp} - Energy: ${energyLevel}, Focus: ${focusLevel}`}
+                        </ThemedText>
+                        {isInFlowState(entry.energy_level, entry.focus_level) ? (
+                          <View style={[styles.flowBadge, { backgroundColor: colors.flowActive }]}>
+                            <ThemedText style={styles.flowBadgeText}>FLOW</ThemedText>
+                          </View>
+                        ) : null}
                       </View>
-                    )}
-                  </View>
 
-                  {entry.notes && entry.notes.trim() && (
-                    <View style={styles.timelineNotes}>
-                      <ThemedText style={[styles.timelineNotesText, { color: colors.textSecondary }]} numberOfLines={2}>
-                        {entry.notes ? entry.notes.trim() : ''}
-                      </ThemedText>
-                    </View>
-                  )}
+                      {entry.notes && entry.notes.trim() ? (
+                        <View style={styles.timelineNotes}>
+                          <ThemedText style={[styles.timelineNotesText, { color: colors.textSecondary }]} numberOfLines={2}>
+                            {entry.notes && String(entry.notes).trim() ? String(entry.notes).trim() : ''}
+                          </ThemedText>
+                        </View>
+                      ) : null}
 
-                  {(entry.caffeine_intake && entry.caffeine_intake > 0) || (entry.alcohol_intake && entry.alcohol_intake > 0) ? (
-                    <View style={styles.timelineFactors}>
-                      {entry.caffeine_intake && entry.caffeine_intake > 0 && (
-                        <ThemedText style={[styles.timelineFactorText, { color: colors.textTertiary }]}>
-                          Caffeine: {entry.caffeine_intake || 0}
-                        </ThemedText>
-                      )}
-                      {entry.alcohol_intake && entry.alcohol_intake > 0 && (
-                        <ThemedText style={[styles.timelineFactorText, { color: colors.textTertiary }]}>
-                          Alcohol: {entry.alcohol_intake || 0}
-                        </ThemedText>
-                      )}
-                    </View>
-                  ) : null}
-                </TouchableOpacity>
-              ))}
-            </Collapsible>
-          </Animated.View>
-        ))}
+                      {((entry.caffeine_intake && entry.caffeine_intake > 0) || (entry.alcohol_intake && entry.alcohol_intake > 0)) ? (
+                        <View style={styles.timelineFactors}>
+                          {entry.caffeine_intake && entry.caffeine_intake > 0 ? (
+                            <ThemedText style={[styles.timelineFactorText, { color: colors.textTertiary }]}>
+                              {`Caffeine: ${entry.caffeine_intake || 0}`}
+                            </ThemedText>
+                          ) : null}
+                          {entry.alcohol_intake && entry.alcohol_intake > 0 ? (
+                            <ThemedText style={[styles.timelineFactorText, { color: colors.textTertiary }]}>
+                              {`Alcohol: ${entry.alcohol_intake || 0}`}
+                            </ThemedText>
+                          ) : null}
+                        </View>
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                } catch (error) {
+                  if (DEBUG_MODE) {
+                    console.error('[DEBUG] Error rendering entry:', error);
+                    console.error('[DEBUG] Entry data:', entry);
+                  }
+                  return null;
+                }
+              })}
+                </Collapsible>
+              </Animated.View>
+            );
+          } catch (error) {
+            if (DEBUG_MODE) {
+              console.error('[DEBUG] Error rendering daily group:', error);
+              console.error('[DEBUG] Group data:', group);
+            }
+            return null;
+          }
+        })}
       </ScrollView>
       
       {/* Floating Export Button */}
