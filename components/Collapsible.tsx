@@ -19,15 +19,6 @@ export function Collapsible({ children, title, expanded, onToggle, summary }: Co
   const [contentHeight, setContentHeight] = useState(0);
   const theme = useColorScheme() ?? 'light';
   
-  // Debug code for fix verification
-  console.log('[FIX_VERIFICATION] Collapsible rendering with:', {
-    title: title,
-    titleType: typeof title,
-    summary: summary,
-    summaryType: typeof summary,
-    expanded: expanded,
-    hasChildren: !!children
-  });
   
   const heightAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -35,6 +26,19 @@ export function Collapsible({ children, title, expanded, onToggle, summary }: Co
   
   const isControlled = expanded !== undefined;
   const isOpen = isControlled ? expanded : internalIsOpen;
+
+  // Initialize animation values based on initial state
+  useEffect(() => {
+    if (isOpen && contentHeight > 0) {
+      heightAnim.setValue(contentHeight);
+      opacityAnim.setValue(1);
+      summaryOpacityAnim.setValue(0);
+    } else if (!isOpen) {
+      heightAnim.setValue(0);
+      opacityAnim.setValue(0);
+      summaryOpacityAnim.setValue((summary && summary.trim().length > 0) ? 1 : 0);
+    }
+  }, []); // Only run on mount
   
   const handleToggle = onToggle || (() => {
     if (!isControlled) {
@@ -85,11 +89,15 @@ export function Collapsible({ children, title, expanded, onToggle, summary }: Co
 
   const handleContentLayout = (event: any) => {
     const { height } = event.nativeEvent.layout;
-    if (height > 0 && contentHeight === 0) {
+    if (height > 0) {
+      const wasUninitialized = contentHeight === 0;
       setContentHeight(height);
-      if (isOpen) {
+      
+      // If this is the first measurement and the item should be open, set it up immediately
+      if (isOpen && wasUninitialized) {
         heightAnim.setValue(height);
         opacityAnim.setValue(1);
+        summaryOpacityAnim.setValue(0);
       }
     }
   };

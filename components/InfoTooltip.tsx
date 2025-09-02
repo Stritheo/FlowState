@@ -40,9 +40,9 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
         animationType="fade"
         onRequestClose={() => setShowModal(false)}
       >
-        <SafeAreaView style={styles.modalSafeArea}>
+        <View style={styles.modalOverlay}>
           <TouchableOpacity
-            style={styles.modalOverlay}
+            style={styles.modalOverlayTouch}
             activeOpacity={1}
             onPress={() => {
               logUIInteraction('InfoTooltip', 'close_modal_overlay', { title });
@@ -54,74 +54,77 @@ export function InfoTooltip({ title, content, size = 16 }: InfoTooltipProps) {
               activeOpacity={1}
               onPress={(e) => e.stopPropagation()}
             >
-            <View style={styles.closeX}>
-              <TouchableOpacity
-                onPress={() => {
-                  logUIInteraction('InfoTooltip', 'close_modal_x_button', { title });
-                  setShowModal(false);
-                }}
-                style={styles.closeXButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                accessibilityLabel="Close tooltip"
-                accessibilityRole="button"
-              >
-                <ThemedText style={[styles.closeXText, { color: colors.text }]}>✕</ThemedText>
-              </TouchableOpacity>
-            </View>
-            <ThemedText style={styles.tooltipTitle}>{title || ''}</ThemedText>
-            <ScrollView 
-              ref={scrollViewRef}
-              style={styles.scrollView}
-              contentContainerStyle={styles.scrollViewContent}
-              showsVerticalScrollIndicator={true}
-              scrollIndicatorInsets={Platform.OS === 'ios' ? { right: 1 } : undefined}
-              bounces={true}
-              alwaysBounceVertical={true}
-              nestedScrollEnabled={true}
-              onScroll={(event) => {
-                const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-                logScrollEvent('InfoTooltip', 'scroll', {
-                  title,
-                  offsetY: contentOffset.y,
-                  contentHeight: contentSize.height,
-                  visibleHeight: layoutMeasurement.height,
-                  scrollableHeight: contentSize.height - layoutMeasurement.height,
-                  scrollProgress: contentOffset.y / Math.max(1, contentSize.height - layoutMeasurement.height)
-                });
-              }}
-              onContentSizeChange={(width, height) => {
-                logScrollEvent('InfoTooltip', 'content_size_change', {
-                  title,
-                  contentWidth: width,
-                  contentHeight: height
-                });
-              }}
-              onLayout={(event) => {
-                const { width, height } = event.nativeEvent.layout;
-                logScrollEvent('InfoTooltip', 'scroll_view_layout', {
-                  title,
-                  scrollViewWidth: width,
-                  scrollViewHeight: height
-                });
-              }}
-              onScrollBeginDrag={() => {
-                logScrollEvent('InfoTooltip', 'scroll_begin_drag', { title });
-              }}
-              onScrollEndDrag={() => {
-                logScrollEvent('InfoTooltip', 'scroll_end_drag', { title });
-              }}
-              onMomentumScrollBegin={() => {
-                logScrollEvent('InfoTooltip', 'momentum_scroll_begin', { title });
-              }}
-              onMomentumScrollEnd={() => {
-                logScrollEvent('InfoTooltip', 'momentum_scroll_end', { title });
-              }}
-            >
-              <ThemedText style={styles.tooltipContent}>{content || ''}</ThemedText>
-            </ScrollView>
+              <View style={styles.closeX}>
+                <TouchableOpacity
+                  onPress={() => {
+                    logUIInteraction('InfoTooltip', 'close_modal_x_button', { title });
+                    setShowModal(false);
+                  }}
+                  style={styles.closeXButton}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityLabel="Close tooltip"
+                  accessibilityRole="button"
+                >
+                  <ThemedText style={[styles.closeXText, { color: colors.text }]}>✕</ThemedText>
+                </TouchableOpacity>
+              </View>
+              
+              <View style={styles.modalContent}>
+                <ThemedText style={styles.tooltipTitle}>{title || ''}</ThemedText>
+                <ScrollView 
+                  ref={scrollViewRef}
+                  style={styles.scrollView}
+                  contentContainerStyle={styles.scrollViewContent}
+                  showsVerticalScrollIndicator={true}
+                  scrollIndicatorInsets={Platform.OS === 'ios' ? { right: 1 } : undefined}
+                  bounces={true}
+                  alwaysBounceVertical={true}
+                  nestedScrollEnabled={true}
+                  onScroll={(event) => {
+                    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+                    logScrollEvent('InfoTooltip', 'scroll', {
+                      title,
+                      offsetY: contentOffset.y,
+                      contentHeight: contentSize.height,
+                      visibleHeight: layoutMeasurement.height,
+                      scrollableHeight: contentSize.height - layoutMeasurement.height,
+                      scrollProgress: contentOffset.y / Math.max(1, contentSize.height - layoutMeasurement.height)
+                    });
+                  }}
+                  onContentSizeChange={(width, height) => {
+                    logScrollEvent('InfoTooltip', 'content_size_change', {
+                      title,
+                      contentWidth: width,
+                      contentHeight: height
+                    });
+                  }}
+                  onLayout={(event) => {
+                    const { width, height } = event.nativeEvent.layout;
+                    logScrollEvent('InfoTooltip', 'scroll_view_layout', {
+                      title,
+                      scrollViewWidth: width,
+                      scrollViewHeight: height
+                    });
+                  }}
+                  onScrollBeginDrag={() => {
+                    logScrollEvent('InfoTooltip', 'scroll_begin_drag', { title });
+                  }}
+                  onScrollEndDrag={() => {
+                    logScrollEvent('InfoTooltip', 'scroll_end_drag', { title });
+                  }}
+                  onMomentumScrollBegin={() => {
+                    logScrollEvent('InfoTooltip', 'momentum_scroll_begin', { title });
+                  }}
+                  onMomentumScrollEnd={() => {
+                    logScrollEvent('InfoTooltip', 'momentum_scroll_end', { title });
+                  }}
+                >
+                  <ThemedText style={styles.tooltipContent}>{content || ''}</ThemedText>
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
           </TouchableOpacity>
-        </TouchableOpacity>
-      </SafeAreaView>
+        </View>
       </Modal>
     </>
   );
@@ -140,11 +143,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     opacity: 0.6,
   },
-  modalSafeArea: {
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalOverlay: {
+  modalOverlayTouch: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -152,10 +155,10 @@ const styles = StyleSheet.create({
   },
   tooltipContainer: {
     borderRadius: 16,
-    padding: 24,
-    maxWidth: Dimensions.get('window').width * 0.85,
+    padding: 0,
+    width: Dimensions.get('window').width * 0.85,
     maxHeight: Dimensions.get('window').height * 0.8,
-    minHeight: 200,
+    minHeight: 500,
     ...createShadowStyle({
       shadowColor: '#000',
       shadowOffset: {
@@ -166,6 +169,11 @@ const styles = StyleSheet.create({
       shadowRadius: 16,
       elevation: 16,
     }),
+  },
+  modalContent: {
+    flex: 1,
+    padding: 24,
+    paddingTop: 32,
   },
   closeX: {
     position: 'absolute',
@@ -187,18 +195,17 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    marginVertical: 8,
+    marginTop: 12,
   },
   scrollViewContent: {
-    paddingBottom: 30,
-    paddingHorizontal: 4,
+    paddingBottom: 20,
+    flexGrow: 1,
   },
   tooltipTitle: {
     fontSize: 20,
     fontWeight: '700',
-    marginBottom: 12,
+    marginBottom: 8,
     textAlign: 'center',
-    paddingTop: 20,
   },
   tooltipContent: {
     fontSize: 16,

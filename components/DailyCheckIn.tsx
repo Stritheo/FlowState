@@ -7,7 +7,6 @@ import { databaseService, DailyEntry } from '../services/database';
 import { Colors } from '../constants/Colors';
 import useColorScheme from '@/hooks/useColorScheme';
 import { calculateFlowState, isInFlowState, getFlowStateColor, getEnergyColor, getFocusColor, getActionColor } from '../utils/flowState';
-import { InfoTooltip } from './InfoTooltip';
 import { getEnergyScaleGuidance, getFocusScaleGuidance, getGeneralScaleGuidance } from '../utils/scaleGuidance';
 import { getCurrentDateInAustralia, formatDateForDisplay, isToday, AUSTRALIA_TIMEZONE } from '../utils/dateUtils';
 import { createShadowStyle } from '../utils/shadowUtils';
@@ -153,11 +152,6 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
     <View style={styles.levelSection}>
       <View style={styles.levelHeader}>
         <ThemedText type="primary" style={styles.levelLabel}>{label}</ThemedText>
-        <InfoTooltip 
-          title={isEnergySection ? getEnergyScaleGuidance().title : getFocusScaleGuidance().title}
-          content={isEnergySection ? getEnergyScaleGuidance().content : getFocusScaleGuidance().content}
-          size={16}
-        />
       </View>
       <View style={styles.levelButtons}>
         <View style={styles.scaleIndicator}>
@@ -328,26 +322,13 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
               <View style={styles.titleRow}>
                 <ThemedText style={styles.title}>Check-In</ThemedText>
                 <View style={styles.titleActions}>
-                  <InfoTooltip 
-                    title="Welcome to FlowState"
-                    content="Welcome to FlowState
-
-FlowState helps you discover and maintain your optimal performance state by tracking energy and focus patterns.
-
-Quick daily check-ins help identify when you're in your Flow State (both energy and focus between 3-5).
-
-Track patterns over time, identify your optimal zones, and export data for deeper analysis.
-
-Getting started: Use the sliders below to record your current energy and focus levels on a 1-7 scale."
-                    size={18}
-                  />
                   {__DEV__ && (
                     <TouchableOpacity
                       style={[styles.debugButton, { backgroundColor: colors.subtle + '20' }]}
                       onPress={() => setShowDebugLogger(true)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <ThemedText style={[styles.debugButtonText, { color: colors.icon }]}>🐛</ThemedText>
+                      <ThemedText style={[styles.debugButtonText, { color: colors.icon }]}>DEBUG</ThemedText>
                     </TouchableOpacity>
                   )}
                 </View>

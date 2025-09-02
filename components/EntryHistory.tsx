@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, StyleSheet, Modal, Animated, Dimensions, Alert } from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Animated, Dimensions, Modal, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedView } from './ThemedView';
 import { ThemedText } from './ThemedText';
 import { Collapsible } from './Collapsible';
 import { DataExport } from './DataExport';
 import { databaseService, DailyEntry } from '../services/database';
+import { exportService, ExportOptions } from '../services/exportService';
 import { Colors } from '../constants/Colors';
 import useColorScheme from '@/hooks/useColorScheme';
 import { calculateFlowState, isInFlowState, getActionColor } from '../utils/flowState';
-import { InfoTooltip } from './InfoTooltip';
 import { getGeneralScaleGuidance } from '../utils/scaleGuidance';
-import { exportService, ExportOptions } from '../services/exportService';
 import { formatDateShort, getDateNDaysAgo, getDateNMonthsAgo } from '../utils/dateUtils';
 import { createShadowStyle } from '../utils/shadowUtils';
 import { logScrollEvent, logUIInteraction, logError, logInfo } from '../utils/logger';
@@ -29,20 +28,20 @@ interface EntryHistoryProps {
 }
 
 export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
-  const DEBUG_MODE = true;
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   
   const [entries, setEntries] = useState<DailyEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [showExport, setShowExport] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>('month');
   const [dailyGroups, setDailyGroups] = useState<DailyGroup[]>([]);
+  const [showExport, setShowExport] = useState(false);
   
   // Animation values
   const fadeAnim = new Animated.Value(0);
   const slideAnim = new Animated.Value(50);
+  const buttonScale = new Animated.Value(1);
 
   useEffect(() => {
     loadEntries();
@@ -60,9 +59,23 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
     }
   };
 
+  const animateButtonPress = () => {
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   const handleDirectExport = async () => {
     try {
-      // Get all entries for export
       const allEntries = await databaseService.getAllEntries();
       
       if (allEntries.length === 0) {
@@ -70,25 +83,21 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
         return;
       }
 
-      // Get date range from all entries
       const sortedEntries = allEntries.sort((a, b) => a.date.localeCompare(b.date));
       const startDate = sortedEntries[0].date;
       const endDate = sortedEntries[sortedEntries.length - 1].date;
 
-      // Create export options for all data
       const exportOptions: ExportOptions = {
         startDate,
         endDate,
-        includeNotes: false, // Don't include notes by default for privacy
-        anonymize: false, // Don't anonymize by default 
-        analysisFormat: true // Use analysis format for better data structure
+        includeNotes: false,
+        anonymize: false,
+        analysisFormat: true
       };
 
-      // Export the data
       const result = await exportService.exportData(exportOptions);
       
       if (result.success && result.filePath) {
-        // Share the export file
         const shared = await exportService.shareExport(result.filePath);
         if (!shared) {
           Alert.alert('Export Complete', `Data exported successfully!\nFile saved to: ${result.filePath}`);
@@ -101,6 +110,7 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
       Alert.alert('Export Error', 'Failed to export data. Please try again.');
     }
   };
+
 
   const groupEntriesByDay = (allEntries: DailyEntry[]) => {
     const groups: DailyGroup[] = [];
@@ -195,30 +205,18 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
   };
 
   const generateDailySummary = (entries: DailyEntry[]) => {
-    if (DEBUG_MODE) console.log('[DEBUG] generateDailySummary called with entries:', entries.length);
     
     if (entries.length === 0) {
-      if (DEBUG_MODE) console.log('[DEBUG] generateDailySummary returning empty string');
-      return '';
+        return '';
     }
     
     const avgEnergy = (entries.reduce((sum, entry) => sum + entry.energy_level, 0) / entries.length).toFixed(1);
     const avgFocus = (entries.reduce((sum, entry) => sum + entry.focus_level, 0) / entries.length).toFixed(1);
     const flowEntries = entries.filter(entry => isInFlowState(entry.energy_level, entry.focus_level)).length;
     
-    if (DEBUG_MODE) {
-      console.log('[DEBUG] generateDailySummary variables:');
-      console.log('  - entries.length:', entries.length, typeof entries.length);
-      console.log('  - avgEnergy:', avgEnergy, typeof avgEnergy);
-      console.log('  - avgFocus:', avgFocus, typeof avgFocus);
-      console.log('  - flowEntries:', flowEntries, typeof flowEntries);
-    }
     
     const summary = `${entries.length} ${entries.length === 1 ? 'entry' : 'entries'} • Avg Energy: ${avgEnergy} • Avg Focus: ${avgFocus} • Flow: ${flowEntries}/${entries.length}`;
     
-    if (DEBUG_MODE) {
-      console.log('[DEBUG] generateDailySummary result:', summary, typeof summary);
-    }
     
     return summary;
   };
@@ -630,7 +628,6 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
   }, [isLoading, entries.length]);
 
   if (isLoading) {
-    if (DEBUG_MODE) console.log('[DEBUG] Rendering loading state');
     return (
       <ThemedView style={styles.container}>
         <View style={styles.header}>
@@ -642,7 +639,6 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
   }
 
   if (entries.length === 0) {
-    if (DEBUG_MODE) console.log('[DEBUG] Rendering empty state');
     return (
       <ThemedView style={styles.container}>
         <View style={styles.header}>
@@ -653,13 +649,6 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
     );
   }
 
-  if (DEBUG_MODE) {
-    console.log('[DEBUG] Rendering main component with:', {
-      entriesCount: entries.length,
-      dailyGroupsCount: dailyGroups.length,
-      timeRange: timeRange
-    });
-  }
 
   return (
     <View style={[styles.container, { paddingTop: Math.max(insets.top, 36) }]}>
@@ -668,18 +657,13 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
           <ThemedText style={styles.title}>Entry History</ThemedText>
         </View>
         <View style={styles.headerInfo}>
-          <InfoTooltip 
-            title={getGeneralScaleGuidance().title}
-            content={getGeneralScaleGuidance().content}
-            size={18}
-          />
         </View>
       </View>
       
       <ScrollView 
         style={styles.scrollView} 
         contentContainerStyle={{
-          paddingBottom: 60 + (insets.bottom || 20)
+          paddingBottom: 100 + (insets.bottom || 20)
         }}
         showsVerticalScrollIndicator={false}
         onScroll={(event) => {
@@ -710,28 +694,10 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
         {renderTrendChart()}
         
         {dailyGroups.map((group, groupIndex) => {
-          if (DEBUG_MODE) {
-            console.log(`[DEBUG] Rendering daily group ${groupIndex}:`, {
-              date: group.date,
-              entriesCount: group.entries.length,
-              isCollapsed: group.isCollapsed
-            });
-          }
 
           const formattedDate = formatDate(group.date);
           const summary = generateDailySummary(group.entries);
           
-          if (DEBUG_MODE) {
-            console.log('[DEBUG] Collapsible props:', {
-              title: formattedDate,
-              titleType: typeof formattedDate,
-              expanded: !group.isCollapsed,
-              expandedType: typeof (!group.isCollapsed),
-              summary: summary,
-              summaryType: typeof summary,
-              summaryLength: summary?.length || 0
-            });
-          }
 
           try {
             return (
@@ -749,30 +715,11 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
                   summary={summary}
                 >
               {group.entries.map((entry, entryIndex) => {
-                if (DEBUG_MODE) {
-                  console.log(`[DEBUG] Rendering entry ${entryIndex} in group ${group.date}:`, {
-                    entryId: entry.id,
-                    energyLevel: entry.energy_level,
-                    focusLevel: entry.focus_level,
-                    createdAt: entry.created_at,
-                    notes: entry.notes ? entry.notes.substring(0, 50) + '...' : 'none'
-                  });
-                }
 
                 const timestamp = formatTimestamp(entry.created_at);
                 const energyLevel = entry.energy_level || 0;
                 const focusLevel = entry.focus_level || 0;
                 
-                if (DEBUG_MODE) {
-                  console.log('[DEBUG] Entry template literal variables:', {
-                    timestamp: timestamp,
-                    timestampType: typeof timestamp,
-                    energyLevel: energyLevel,
-                    energyLevelType: typeof energyLevel,
-                    focusLevel: focusLevel,
-                    focusLevelType: typeof focusLevel
-                  });
-                }
 
                 try {
                   return (
@@ -824,10 +771,6 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
                     </TouchableOpacity>
                   );
                 } catch (error) {
-                  if (DEBUG_MODE) {
-                    console.error('[DEBUG] Error rendering entry:', error);
-                    console.error('[DEBUG] Entry data:', entry);
-                  }
                   return null;
                 }
               })}
@@ -835,10 +778,6 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
               </Animated.View>
             );
           } catch (error) {
-            if (DEBUG_MODE) {
-              console.error('[DEBUG] Error rendering daily group:', error);
-              console.error('[DEBUG] Group data:', group);
-            }
             return null;
           }
         })}
@@ -852,27 +791,15 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
           marginBottom: 0
         }
       ]}>
-        <Animated.View style={{ transform: [{ scale: fadeAnim }] }}>
+        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
           <TouchableOpacity
             style={[
               styles.floatingExportButton,
               { backgroundColor: colors[getActionColor()] }
             ]}
             onPress={() => {
-              Animated.sequence([
-                Animated.timing(fadeAnim, {
-                  toValue: 0.95,
-                  duration: 100,
-                  useNativeDriver: true,
-                }),
-                Animated.timing(fadeAnim, {
-                  toValue: 1,
-                  duration: 100,
-                  useNativeDriver: true,
-                }),
-              ]).start();
+              animateButtonPress();
               
-              // Show action sheet for export options
               Alert.alert(
                 'Export Data',
                 'Choose export option:',
@@ -894,7 +821,9 @@ export function EntryHistory({ onEntrySelect }: EntryHistoryProps) {
               );
             }}
           >
-            <ThemedText style={[styles.floatingExportButtonText, { color: '#FFFFFF', fontWeight: '600' }]}>Export Data</ThemedText>
+            <ThemedText style={[styles.floatingExportButtonText, { color: '#FFFFFF', fontWeight: '600' }]}>
+              Export Data
+            </ThemedText>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -938,47 +867,6 @@ const styles = StyleSheet.create({
     right: 0,
     top: 0,
     zIndex: 998,
-  },
-  floatingButtonContainer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    backgroundColor: 'rgba(248, 250, 252, 0.98)',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(226, 232, 240, 0.5)',
-    ...createShadowStyle({
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: -2,
-      },
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 8,
-    }),
-  },
-  floatingExportButton: {
-    paddingVertical: 18,
-    paddingHorizontal: 32,
-    borderRadius: 12,
-    alignItems: 'center',
-    ...createShadowStyle({
-      shadowColor: '#000',
-      shadowOffset: {
-        width: 0,
-        height: 4,
-      },
-      shadowOpacity: 0.2,
-      shadowRadius: 8,
-      elevation: 6,
-    }),
-  },
-  floatingExportButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
@@ -1323,5 +1211,46 @@ const styles = StyleSheet.create({
   timelineFactorText: {
     fontSize: 12,
     fontWeight: '500',
+  },
+  floatingButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    backgroundColor: 'rgba(248, 250, 252, 0.98)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(226, 232, 240, 0.5)',
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: -2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 8,
+    }),
+  },
+  floatingExportButton: {
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    alignItems: 'center',
+    ...createShadowStyle({
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 4,
+      },
+      shadowOpacity: 0.2,
+      shadowRadius: 8,
+      elevation: 6,
+    }),
+  },
+  floatingExportButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
   },
 });
