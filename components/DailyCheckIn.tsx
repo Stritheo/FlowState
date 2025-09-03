@@ -10,8 +10,6 @@ import { calculateFlowState, isInFlowState, getFlowStateColor, getEnergyColor, g
 import { getEnergyScaleGuidance, getFocusScaleGuidance, getGeneralScaleGuidance } from '../utils/scaleGuidance';
 import { getCurrentDateInAustralia, formatDateForDisplay, isToday, AUSTRALIA_TIMEZONE } from '../utils/dateUtils';
 import { createShadowStyle } from '../utils/shadowUtils';
-import { logScrollEvent, logUIInteraction, logError, logInfo } from '../utils/logger';
-import { DebugLogger } from './DebugLogger';
 
 interface DailyCheckInProps {
   date?: string;
@@ -32,8 +30,6 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [existingEntry, setExistingEntry] = useState<DailyEntry | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showDebugLogger, setShowDebugLogger] = useState(false);
-  const lastContentHeightRef = useRef(0);
   
   // Animation values
   const buttonScale = new Animated.Value(1);
@@ -52,7 +48,6 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
 
   const loadExistingEntry = async () => {
     try {
-      logInfo('data', 'Loading existing entry', 'DailyCheckIn', { selectedDate });
       const entry = await databaseService.getDailyEntry(selectedDate);
       if (entry) {
         setExistingEntry(entry);
@@ -61,7 +56,6 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
         setCaffeineIntake(entry.caffeine_intake || 0);
         setAlcoholIntake(entry.alcohol_intake || 0);
         setNotes(entry.notes || '');
-        logInfo('data', 'Existing entry loaded successfully', 'DailyCheckIn', { entryId: entry.id });
       } else {
         // Reset counters for new day
         setCaffeineIntake(0);
@@ -70,10 +64,9 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
         setEnergyLevel(4);
         setFocusLevel(4);
         setExistingEntry(null);
-        logInfo('data', 'No existing entry found, using defaults', 'DailyCheckIn');
       }
     } catch (error) {
-      logError('data', 'Failed to load existing entry', 'DailyCheckIn', { selectedDate }, error as Error);
+      console.error('Failed to load existing entry:', error);
     }
   };
 
@@ -109,7 +102,7 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
 
       Alert.alert('Success', 'Daily check-in saved!');
     } catch (error) {
-      logError('data', 'Failed to save entry', 'DailyCheckIn', { selectedDate }, error as Error);
+      console.error('Failed to save entry:', error);
       Alert.alert('Error', 'Failed to save daily check-in');
     } finally {
       setIsLoading(false);
@@ -287,51 +280,10 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
           keyboardShouldPersistTaps="handled"
           bounces={true}
           alwaysBounceVertical={false}
-          onScroll={__DEV__ ? (event) => {
-            const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-            // Only log major scroll events to reduce spam
-            if (Math.abs(contentOffset.y % 50) < 5) {
-              logScrollEvent('DailyCheckIn', 'main_scroll', {
-                offsetY: contentOffset.y,
-                contentHeight: contentSize.height,
-                visibleHeight: layoutMeasurement.height,
-                scrollProgress: contentOffset.y / Math.max(1, contentSize.height - layoutMeasurement.height)
-              });
-            }
-          } : undefined}
-          onContentSizeChange={__DEV__ ? (width, height) => {
-            // Only log if size changes significantly (by more than 50px to reduce noise)
-            const lastHeight = lastContentHeightRef.current || 0;
-            if (Math.abs(height - lastHeight) > 50) {
-              lastContentHeightRef.current = height;
-              logScrollEvent('DailyCheckIn', 'content_size_change', {
-                contentWidth: width,
-                contentHeight: height
-              });
-            }
-          } : undefined}
-          onLayout={__DEV__ ? (event) => {
-            const { width, height } = event.nativeEvent.layout;
-            logScrollEvent('DailyCheckIn', 'scroll_view_layout', {
-              scrollViewWidth: width,
-              scrollViewHeight: height
-            });
-          } : undefined}
         >
             <View style={styles.titleContainer}>
               <View style={styles.titleRow}>
                 <ThemedText style={styles.title}>Check-In</ThemedText>
-                <View style={styles.titleActions}>
-                  {__DEV__ && (
-                    <TouchableOpacity
-                      style={[styles.debugButton, { backgroundColor: colors.subtle + '20' }]}
-                      onPress={() => setShowDebugLogger(true)}
-                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    >
-                      <ThemedText style={[styles.debugButtonText, { color: colors.icon }]}>DEBUG</ThemedText>
-                    </TouchableOpacity>
-                  )}
-                </View>
               </View>
             </View>
             
@@ -439,11 +391,6 @@ export function DailyCheckIn({ date: propDate, onSave }: DailyCheckInProps) {
           textColor={colors.textPrimary}
         />
       )}
-      
-      <DebugLogger
-        visible={showDebugLogger}
-        onClose={() => setShowDebugLogger(false)}
-      />
     </KeyboardAvoidingView>
   );
 }
@@ -480,17 +427,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-  },
-  debugButton: {
-    marginLeft: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-  },
-  debugButtonText: {
-    fontSize: 14,
   },
   dateContainer: {
     marginBottom: 24,

@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.helloworld"
+    namespace "com.flowstatediamondclarity"
     defaultConfig {
-        applicationId "com.helloworld"
+        applicationId "com.flowstatediamondclarity"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
